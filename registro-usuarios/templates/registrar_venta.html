@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bill Flow</title>
+<style>
+/* Layout: sidebar + formulario a la izquierda + resumen a la derecha. Wireframe en escala de grises. */
+:root {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --fg: #1c1c1c;
+  --muted: #6b6b6b;
+  --line: #cfcfcb;
+  --field: #f1f1ee;
+  --accent: #2b5fd9;
+  --ink: #1c1c1c;
+  --ink-fg: #ffffff;
+  color-scheme: light;
+}
+html { font-size: clamp(11px, min(0.95vw, 1.45vh), 30px); }
+body {
+  overflow-x: hidden;
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+button, input { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+.app { display: grid; width: 100%; grid-template-columns: 11rem minmax(0, 1fr); min-height: 100vh; }
+
+/* Sidebar */
+.side { border-right: 1px solid var(--line); padding: 1.25rem 0.875rem; display: flex; flex-direction: column; gap: 0.375rem; background: var(--surface); }
+.brand { font-weight: 700; font-size: 1rem; padding: 0 0.375rem 0.875rem; }
+.nav { display: block; font-size: 0.875rem; padding: 0.5625rem 0.625rem; border-radius: 0.375rem; color: var(--muted); text-decoration: none; background: none; border: 1px solid transparent; text-align: left; cursor: pointer; }
+.nav.active { color: var(--fg); border-color: var(--ink); font-weight: 600; }
+.side-foot { margin-top: auto; border-top: 1px dashed var(--line); padding-top: 0.75rem; color: var(--muted); font-size: 0.75rem; }
+
+/* Main */
+main { padding: 0.75rem 1rem 1rem; min-width: 0; width: 100%; margin: 0; box-sizing: border-box; }
+.eyebrow { margin: 0; color: var(--accent); font-size: 0.6875rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+h1 { margin: 0.25rem 0 2px; font-size: 1.5rem; text-wrap: balance; }
+.sub { margin: 0 0 0.75rem; color: var(--muted); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.grid > aside { width: 100%; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 0.5rem; padding: 1.125rem; min-width: 0; }
+
+/* Campos */
+.row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem; }
+.field { flex: 1 1 10rem; min-width: 0; }
+.label { display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--fg); margin-bottom: 0.375rem; }
+.label small { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
+.num { display: inline-grid; place-items: center; width: 1.0625rem; height: 1.0625rem; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.625rem; }
+.box { border: 1px dashed #9a9a94; background: var(--field); border-radius: 0.375rem; padding: 0.625rem 0.75rem; color: var(--muted); min-height: 2.25rem; display: flex; align-items: center; }
+.box.solid { border-style: solid; border-color: var(--line); background: var(--surface); color: var(--fg); }
+.search { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 0.375rem; padding: 0.625rem 0.75rem; }
+.search::placeholder { color: var(--muted); }
+
+.tabs { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.5rem; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 0.375rem; padding: 0.5rem 0.6875rem; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--ink-fg); }
+.chip-group { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+
+.stepper { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--line); border-radius: 0.375rem; padding: 0.25rem; background: var(--surface); }
+.stepper button { width: 2.25rem; height: 2.125rem; border: 0; background: var(--field); border-radius: 0.3125rem; cursor: pointer; font-size: 1rem; }
+.stepper span { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.money { font-variant-numeric: tabular-nums; }
+
+.freq-title { font-size: 0.6875rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin: 0.375rem 0 0.5rem; }
+.freq { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.75rem, 1fr)); gap: 0.5rem; }
+.freq button { text-align: center; border: 1px solid var(--line); background: var(--surface); border-radius: 0.375rem; padding: 0.625rem 0.5rem; cursor: pointer; }
+.freq button b { display: block; font-size: 0.8125rem; }
+.freq button span { color: var(--muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+
+/* Resumen */
+.sum-title { font-size: 0.6875rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin: 0 0 0.625rem; }
+.line { display: flex; justify-content: space-between; gap: 0.625rem; padding: 0.5rem 0; border-bottom: 1px solid var(--line); }
+.line:last-of-type { border-bottom: 0; }
+.line .money { white-space: nowrap; }
+.add { color: var(--accent); background: none; border: 0; padding: 0.5rem 0 0; cursor: pointer; }
+.total { display: flex; justify-content: space-between; align-items: baseline; border-top: 2px solid var(--ink); margin-top: 0.625rem; padding-top: 0.625rem; font-weight: 700; font-size: 1rem; }
+.submit { width: 100%; margin-top: 1rem; background: var(--ink); color: var(--ink-fg); border: 0; border-radius: 0.375rem; padding: 0.8125rem; font-weight: 600; cursor: pointer; }
+.dte { margin-top: 0.625rem; font-size: 0.75rem; color: var(--muted); }
+
+.recent { margin-top: 1rem; }
+.recent .line { font-size: 0.8125rem; }
+.muted-tag { color: var(--muted); font-size: 0.6875rem; }
+
+.note { margin-top: 1rem; padding: 0.625rem 0.75rem; border-left: 0.1875rem solid var(--accent); background: var(--surface); color: var(--muted); font-size: 0.75rem; border-radius: 0.25rem; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; }
+  .side { flex-direction: row; flex-wrap: wrap; align-items: center; border-right: 0; border-bottom: 1px solid var(--line); padding: 0.75rem 0; }
+  .brand { padding: 0 0.625rem 0 0; }
+  .side-foot { display: none; }
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  main { padding: 1.125rem 0 2rem; }
+}
+
+.plato-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(11.875rem, 1fr)); gap: 0.375rem; margin-top: 0.625rem; max-height: 12rem; overflow-y: auto; }
+.plato { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 0.375rem; padding: 0.5rem 0.625rem; cursor: pointer; }
+.plato[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.plato span { display: block; color: var(--muted); font-size: 0.75rem; }
+.addbtn { border: 1px solid var(--ink); background: var(--surface); border-radius: 0.375rem; padding: 0.625rem 0.875rem; cursor: pointer; font-weight: 600; }
+.addbtn:disabled { opacity: .4; cursor: not-allowed; }
+.rm { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0 0.25rem; }
+.flash { margin-bottom: 0.875rem; padding: 0.625rem 0.75rem; border: 1px solid #6ee7b7; background: #ecfdf5; border-radius: 0.375rem; }
+.flash.err { border-color: #f5c26b; background: #fff4e5; }
+.empty { color: var(--muted); padding: 0.5rem 0; }
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">Bill Flow</div>
+    <button class="nav active" type="button">+ Registrar venta</button>
+    {% if session['es_admin'] %}<a class="nav" href="{{ url_for('panel') }}">Panel del administrador</a>{% endif %}
+    <a class="nav" href="{{ url_for('logout') }}">Cerrar sesión</a>
+    <div class="side-foot">
+      Rol: <b>{{ session['rol'] }}</b><br>
+      Usuario: <span>{{ session['username'] }}</span>
+    </div>
+  </aside>
+
+  <main>
+    <p class="eyebrow">Pantalla 1 · Caja</p>
+    <h1>Registrar venta</h1>
+    <p class="sub">Lo que la cajera llena por cada venta. Meta: menos de 1 minuto.</p>
+
+    {% for m in get_flashed_messages() %}
+      <div class="flash {% if not m.startswith('Venta') %}err{% endif %}">{{ m }}</div>
+    {% endfor %}
+
+    <form method="post" action="{{ url_for('nueva_venta') }}" id="form">
+    <div class="grid">
+      <section class="card" aria-label="Formulario de venta">
+
+        <div class="row">
+          <div class="field">
+            <div class="label">Fecha y hora <small>(automático)</small></div>
+            <div class="box">{{ ahora }}</div>
+          </div>
+          <div class="field">
+            <div class="label">Cajera <small>(automático)</small></div>
+            <div class="box">{{ session['username'] }}</div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:16px">
+          <div class="label"><span class="num">1</span> Plato <small>(categorías del menú)</small></div>
+          <input class="search" type="search" id="buscar" placeholder="🔍 Buscar plato… (ej. &quot;chorizo&quot;)" aria-label="Buscar plato">
+          <div class="tabs" id="cats" role="group" aria-label="Categorías">
+            {% for c in categorias %}
+            <button type="button" class="chip" data-cat="{{ c['id'] }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ c['nombre'] }}</button>
+            {% endfor %}
+          </div>
+          <div class="plato-list" id="platos"></div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <div class="label">Precio unitario <small>(auto, desde)</small></div>
+            <div class="box money" id="precio">—</div>
+          </div>
+          <div class="field">
+            <div class="label"><span class="num">2</span> Cantidad</div>
+            <div class="stepper">
+              <button type="button" id="menos" aria-label="Menos">−</button>
+              <span id="cant">1</span>
+              <button type="button" id="mas" aria-label="Más">+</button>
+            </div>
+          </div>
+          <div class="field" style="align-self:flex-end">
+            <button type="button" class="addbtn" id="agregar" disabled>+ Agregar a la orden</button>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:16px">
+          <div class="label"><span class="num">3</span> Tipo de documento <small>(tipo_cliente)</small></div>
+          <div class="chip-group" role="group" aria-label="Tipo de documento">
+            {% for t in tipos %}
+            <label class="chip" style="cursor:pointer">
+              <input type="radio" name="tipo_cliente_id" value="{{ t['id'] }}" {{ 'checked' if loop.first }} hidden>
+              {{ t['documento'] }} · {{ t['codigo'] }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:16px">
+          <div class="label"><span class="num">4</span> Método de pago <small>(forma_pago)</small></div>
+          <div class="chip-group" role="group" aria-label="Método de pago">
+            {% for p in pagos %}
+            <label class="chip" style="cursor:pointer">
+              <input type="radio" name="forma_pago_id" value="{{ p['id'] }}" {{ 'checked' if loop.first }} hidden>
+              {{ p['nombre'] }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="freq-title">Platos frecuentes <span class="muted-tag">(un toque lo agrega a la orden)</span></div>
+        <div class="freq" id="freq"></div>
+      </section>
+
+      <aside>
+        <section class="card" aria-label="Resumen de la orden">
+          <div class="sum-title">Resumen de la orden</div>
+          <div id="lineas"></div>
+          <div class="total"><span>TOTAL</span><span class="money" id="total">$0.00</span></div>
+          <input type="hidden" name="items" id="items">
+          <button class="submit" type="submit" id="registrar" disabled>✓ Registrar venta</button>
+          <div class="dte">Al registrar, el estado DTE queda en <b>1 · Recibos emitidos</b>.</div>
+        </section>
+      </aside>
+    </div>
+    </form>
+  </main>
+</div>
+
+<script>
+var PLATOS = {{ platillos|tojson }};
+var FRECUENTES = {{ frecuentes|tojson }};
+var porId = {};
+PLATOS.forEach(function (p) { porId[p.id] = p; });
+
+var catActual = {{ categorias[0]['id'] if categorias else 0 }};
+var seleccion = null, cantidad = 1, orden = {};
+
+function $(id) { return document.getElementById(id); }
+function money(n) { return '$' + n.toFixed(2); }
+
+function pintarPlatos() {
+  var q = $('buscar').value.trim().toLowerCase();
+  var lista = PLATOS.filter(function (p) {
+    return q ? p.nombre.toLowerCase().indexOf(q) !== -1 : p.categoria_id === catActual;
+  });
+  var cont = $('platos');
+  cont.innerHTML = '';
+  lista.forEach(function (p) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'plato';
+    b.setAttribute('aria-pressed', seleccion === p.id ? 'true' : 'false');
+    b.innerHTML = '<b></b><span></span>';
+    b.firstChild.textContent = p.nombre;
+    b.lastChild.textContent = money(p.precio_desde);
+    b.onclick = function () { seleccion = p.id; cantidad = 1; pintarSeleccion(); pintarPlatos(); };
+    cont.appendChild(b);
+  });
+  if (!lista.length) cont.innerHTML = '<div class="empty">Sin resultados.</div>';
+}
+
+function pintarSeleccion() {
+  $('precio').textContent = seleccion ? money(porId[seleccion].precio_desde) : '—';
+  $('cant').textContent = cantidad;
+  $('agregar').disabled = !seleccion;
+}
+
+function pintarOrden() {
+  var cont = $('lineas'), total = 0, ids = Object.keys(orden);
+  cont.innerHTML = '';
+  ids.forEach(function (id) {
+    var p = porId[id], sub = p.precio_desde * orden[id];
+    total += sub;
+    var d = document.createElement('div');
+    d.className = 'line';
+    d.innerHTML = '<span></span><span class="money"></span>';
+    d.firstChild.textContent = orden[id] + ' × ' + p.nombre;
+    d.lastChild.textContent = money(sub) + ' ';
+    var x = document.createElement('button');
+    x.type = 'button'; x.className = 'rm'; x.textContent = '✕'; x.title = 'Quitar';
+    x.onclick = function () { delete orden[id]; pintarOrden(); };
+    d.lastChild.appendChild(x);
+    cont.appendChild(d);
+  });
+  if (!ids.length) cont.innerHTML = '<div class="empty">Aún no hay platos en la orden.</div>';
+  $('total').textContent = money(total);
+  $('registrar').disabled = !ids.length;
+  $('items').value = ids.map(function (id) { return id + ':' + orden[id]; }).join(',');
+}
+
+function agregar(id, n) { orden[id] = (orden[id] || 0) + n; pintarOrden(); }
+
+document.querySelectorAll('#cats .chip').forEach(function (c) {
+  c.onclick = function () {
+    document.querySelectorAll('#cats .chip').forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+    c.setAttribute('aria-pressed', 'true');
+    catActual = parseInt(c.dataset.cat, 10);
+    $('buscar').value = '';
+    pintarPlatos();
+  };
+});
+$('buscar').oninput = pintarPlatos;
+$('mas').onclick = function () { cantidad++; pintarSeleccion(); };
+$('menos').onclick = function () { if (cantidad > 1) cantidad--; pintarSeleccion(); };
+$('agregar').onclick = function () {
+  if (!seleccion) return;
+  agregar(seleccion, cantidad);
+  seleccion = null; cantidad = 1; pintarSeleccion(); pintarPlatos();
+};
+
+FRECUENTES.forEach(function (id) {
+  var p = porId[id]; if (!p) return;
+  var b = document.createElement('button');
+  b.type = 'button'; b.innerHTML = '<b></b><span></span>';
+  b.firstChild.textContent = p.nombre; b.lastChild.textContent = money(p.precio_desde);
+  b.onclick = function () { agregar(id, 1); };
+  $('freq').appendChild(b);
+});
+
+// Chips de opción única (radio): marcar el seleccionado
+function marcarRadios() {
+  document.querySelectorAll('.chip-group .chip').forEach(function (c) {
+    var r = c.querySelector('input');
+    c.setAttribute('aria-pressed', r && r.checked ? 'true' : 'false');
+  });
+}
+document.querySelectorAll('.chip-group input').forEach(function (r) { r.onchange = marcarRadios; });
+
+marcarRadios(); pintarPlatos(); pintarSeleccion(); pintarOrden();
+</script>
+</body>
+</html>
