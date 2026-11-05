@@ -1,0 +1,11 @@
+# Datos sensibles de clientes (NIT, NRC, nombre, dirección) y secretos
+.env
+.env.*
+*.env
+# Bases de datos locales y respaldos
+*.db
+*.db.bak*
+restaurante.db.bak-*
+__pycache__/
+.DS_Store
+.claude/settings.local.json

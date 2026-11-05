@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cierre diario</title>
+<style>
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,sans-serif;background:#eef4fb;display:block;padding:0}
+  table{width:100%;border-collapse:collapse} th,td{text-align:left;border-bottom:1px solid #eee}
+  #cierre .cerrar{text-decoration:none;display:inline-block}
+  #cierre { display:block; min-height:100vh; background:#eef4fb; overflow:auto; padding:1.2rem 1.6rem;
+            font-size:15px; color:#1e293b; }
+  #cierre.open { display:block; }
+  #cierre .hd { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+  #cierre h2 { margin:0; font-size:1.5rem; color:#1e3a8a; }
+  #cierre .sub { color:#64748b; font-size:.85rem; }
+  #cierre .tabs { display:flex; gap:.5rem; }
+  #cierre .tabs button, #cierre .cerrar { width:auto; margin:0; padding:.5rem 1.2rem; border-radius:999px; border:0; cursor:pointer;
+            font-weight:600; font-size:.95rem; background:#fff; color:#1e3a8a; box-shadow:0 1px 3px #0001; }
+  #cierre .tabs button.on { background:#3b82f6; color:#fff; }
+  #cierre .cerrar { background:#fecaca; color:#7f1d1d; }
+  #cierre .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.8rem; margin:1rem 0; }
+  #cierre .kpi { background:#fff; border-radius:14px; padding:.9rem 1rem; box-shadow:0 2px 8px #1e3a8a14; border-left:5px solid var(--c); }
+  #cierre .kpi small { color:#64748b; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; }
+  #cierre .kpi b { display:block; font-size:1.7rem; margin-top:.15rem; color:#0f172a; }
+  #cierre .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:.8rem; }
+  #cierre .panel { background:#fff; border-radius:14px; padding:.9rem 1rem; box-shadow:0 2px 8px #1e3a8a14; min-width:0; }
+  #cierre .panel h3 { margin:0 0 .6rem; font-size:.95rem; color:#334155; }
+  #cierre .c12{grid-column:span 12} #cierre .c8{grid-column:span 8} #cierre .c6{grid-column:span 6}
+  #cierre .c4{grid-column:span 4} #cierre .c3{grid-column:span 3}
+  @media (max-width:1000px){ #cierre .c8,#cierre .c6,#cierre .c4,#cierre .c3{grid-column:span 12} }
+  #cierre svg { width:100%; height:auto; display:block; }
+  #cierre .bar { display:flex; align-items:center; gap:.5rem; margin:.35rem 0; font-size:.85rem; }
+  #cierre .bar .n { width:38%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #cierre .bar .t { flex:1; background:#eef2f7; border-radius:99px; height:12px; overflow:hidden; }
+  #cierre .bar .t i { display:block; height:100%; border-radius:99px; }
+  #cierre .bar .v { width:4.5rem; text-align:right; font-weight:600; }
+  #cierre .leg { display:flex; flex-direction:column; gap:.3rem; font-size:.82rem; justify-content:center; }
+  #cierre .leg span i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; }
+  #cierre .dn { display:flex; gap:1rem; align-items:center; }
+  #cierre .dn svg { width:120px; flex:none; }
+  #cierre table { font-size:.82rem; margin:0; }
+  #cierre th { position:sticky; top:0; background:#f1f5f9; padding:.45rem .6rem; }
+  #cierre td { padding:.4rem .6rem; }
+  #cierre .scroll { max-height:260px; overflow:auto; }
+  #cierre .pill { padding:2px 9px; border-radius:99px; font-size:.75rem; background:#dbeafe; color:#1e40af; white-space:nowrap; }
+  #cierre .pill.ok { background:#dcfce7; color:#166534; }
+  #cierre .vacio { color:#94a3b8; text-align:center; padding:1.5rem 0; font-size:.9rem; }
+</style></head><body>
+<div id="cierre">
+  <div class="hd">
+    <div><h2>📊 Cierre diario</h2><div class="sub" id="cRango"></div></div>
+    <div class="tabs">
+      <button data-r="hoy" class="on">Hoy</button><button data-r="semana">Semana</button><button data-r="mes">Mes</button>
+    </div>
+    <a class="cerrar" href="{{ url_for('panel') }}">← Volver al panel</a>
+  </div>
+  <div class="kpis" id="cKpis"></div>
+  <div class="grid">
+    <div class="panel c8"><h3 id="cSerieT">Ventas</h3><div id="cSerie"></div></div>
+    <div class="panel c4"><h3>Formas de pago</h3><div id="cPago"></div></div>
+    <div class="panel c4"><h3>Top platillos (unidades)</h3><div id="cTop"></div></div>
+    <div class="panel c4"><h3>Por categoría</h3><div id="cCat"></div></div>
+    <div class="panel c4"><h3>Tipo de documento</h3><div id="cDoc"></div></div>
+    <div class="panel c4"><h3>Estado DTE</h3><div id="cEstado"></div></div>
+    <div class="panel c4"><h3>Por empleado</h3><div id="cEmp"></div></div>
+    <div class="panel c4"><h3>Resumen</h3><div id="cRes"></div></div>
+    <div class="panel c12"><h3>Detalle de recibos</h3><div class="scroll" id="cRecibos"></div></div>
+  </div>
+</div>
+<script>
+(function(){
+  const $=id=>document.getElementById(id), box=$('cierre');
+  const COL=['#60a5fa','#34d399','#fbbf24','#f472b6','#a78bfa','#fb923c','#2dd4bf','#94a3b8'];
+  const money=n=>'$'+(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let rango='hoy', timer=null;
+
+  function bars(el,rows,key,fmt){
+    if(!rows.length) return el.innerHTML='<div class="vacio">Sin datos</div>';
+    const max=Math.max(...rows.map(r=>r[key]))||1;
+    el.innerHTML=rows.map((r,i)=>`<div class="bar"><span class="n" title="${esc(r.nombre)}">${esc(r.nombre)}</span>
+      <span class="t"><i style="width:${Math.max(r[key]/max*100,3)}%;background:${COL[i%COL.length]}"></i></span>
+      <span class="v">${fmt(r[key])}</span></div>`).join('');
+  }
+  function donut(el,rows){
+    const tot=rows.reduce((a,r)=>a+r.total,0);
+    if(!tot) return el.innerHTML='<div class="vacio">Sin datos</div>';
+    let a=0,paths='';const R=40,C=2*Math.PI*R;
+    rows.forEach((r,i)=>{const f=r.total/tot;
+      paths+=`<circle r="${R}" cx="60" cy="60" fill="none" stroke="${COL[i%COL.length]}" stroke-width="22"
+        stroke-dasharray="${f*C} ${C}" stroke-dashoffset="${-a*C}" transform="rotate(-90 60 60)"/>`;a+=f;});
+    el.innerHTML=`<div class="dn"><svg viewBox="0 0 120 120">${paths}
+      <text x="60" y="58" text-anchor="middle" font-size="9" fill="#64748b">Total</text>
+      <text x="60" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">${money(tot)}</text></svg>
+      <div class="leg">${rows.map((r,i)=>`<span><i style="background:${COL[i%COL.length]}"></i>${esc(r.nombre)} · <b>${money(r.total)}</b> (${Math.round(r.total/tot*100)}%)</span>`).join('')}</div></div>`;
+  }
+  function serie(el,s){
+    const W=640,H=200,pl=40,pb=24,n=s.length,max=Math.max(...s.map(x=>x.total),1);
+    const bw=(W-pl)/n;let g='';
+    for(let i=0;i<=4;i++){const y=H-pb-(H-pb-10)*i/4;
+      g+=`<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="#e2e8f0"/><text x="${pl-4}" y="${y+3}" text-anchor="end" font-size="9" fill="#94a3b8">$${Math.round(max*i/4)}</text>`;}
+    const every=Math.ceil(n/12);
+    s.forEach((x,i)=>{const h=(H-pb-10)*x.total/max,xx=pl+i*bw+bw*.15;
+      g+=`<rect x="${xx}" y="${H-pb-h}" width="${bw*.7}" height="${h}" rx="3" fill="#60a5fa"><title>${x.etiqueta}: ${money(x.total)} · ${x.ventas} recibos</title></rect>`;
+      if(x.total>0&&n<=16) g+=`<text x="${xx+bw*.35}" y="${H-pb-h-3}" text-anchor="middle" font-size="9" fill="#1e3a8a">${money(x.total).replace('.00','')}</text>`;
+      if(i%every===0) g+=`<text x="${xx+bw*.35}" y="${H-8}" text-anchor="middle" font-size="9" fill="#64748b">${x.etiqueta}</text>`;});
+    el.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${g}</svg>`;
+  }
+  function kpi(c,l,v){return `<div class="kpi" style="--c:${c}"><small>${l}</small><b>${v}</b></div>`;}
+
+  function pintar(d){
+    $('cRango').textContent=d.etiqueta+' · '+(d.desde===d.hasta?d.desde:d.desde+' – '+d.hasta);
+    const k=d.kpi;
+    $('cKpis').innerHTML=kpi('#60a5fa','Total vendido',money(k.total))+kpi('#34d399','Recibos',k.ventas)
+      +kpi('#fbbf24','Ticket promedio',money(k.ticket))+kpi('#f472b6','Platos vendidos',k.platos)
+      +kpi('#a78bfa','DTE completos',k.completas)+kpi('#fb923c','Pendientes de Hacienda',k.pendientes_hacienda)
+      +kpi('#2dd4bf','Bitcoin pendiente',k.btc_pendientes);
+    $('cSerieT').textContent=d.rango==='hoy'?'Ventas por hora ($)':'Ventas por día ($)';
+    serie($('cSerie'),d.serie);
+    donut($('cPago'),d.por_pago); donut($('cDoc'),d.por_documento);
+    bars($('cTop'),d.top_platos,'cantidad',v=>v+' u.');
+    bars($('cCat'),d.por_categoria,'total',money);
+    bars($('cEstado'),d.por_estado,'ventas',v=>v);
+    bars($('cEmp'),d.por_empleado,'total',money);
+    const mejor=d.serie.reduce((a,x)=>x.total>a.total?x:a,{total:0,etiqueta:'—'});
+    $('cRes').innerHTML=[['Mejor '+(d.rango==='hoy'?'hora':'día'),mejor.total?mejor.etiqueta+' ('+money(mejor.total)+')':'—'],
+      ['Platillo estrella',d.top_platos[0]?d.top_platos[0].nombre:'—'],
+      ['Pago principal',d.por_pago[0]?d.por_pago[0].nombre:'—'],
+      ['Promedio por plato',money(k.platos?k.total/k.platos:0)]]
+      .map(r=>`<div class="bar"><span class="n" style="width:50%">${r[0]}</span><span class="v" style="width:50%;font-weight:600">${esc(r[1])}</span></div>`).join('');
+    $('cRecibos').innerHTML=d.recibos.length?`<table><tr><th>#</th><th>Fecha</th><th>Documento</th><th>Pago</th><th>Platillos</th><th>Empleado</th><th>Estado DTE</th><th style="text-align:right">Total</th></tr>`
+      +d.recibos.map(v=>`<tr><td>${String(v.id).padStart(4,'0')}</td><td>${esc(v.fecha_hora)}</td><td>${esc(v.documento)}</td><td>${esc(v.forma_pago)}</td>
+      <td>${esc(v.items)}</td><td>${esc(v.empleado||'—')}</td><td><span class="pill ${v.paso===5?'ok':''}">${esc(v.estado||'Sin estado')}</span></td>
+      <td style="text-align:right"><b>${money(v.total_usd)}</b></td></tr>`).join('')+'</table>'
+      :'<div class="vacio">No hay recibos en este periodo.</div>';
+  }
+  function cargar(){
+    fetch('{{ url_for("cierre_json") }}?rango='+rango,{credentials:'same-origin'}).then(r=>r.json()).then(pintar)
+      .catch(()=>{$('cRango').textContent='No se pudieron cargar los datos.';});
+  }
+  cargar(); timer=setInterval(cargar,15000);
+  box.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+    box.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');rango=b.dataset.r;cargar();});
+})();
+</script>
+</body></html>

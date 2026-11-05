@@ -1,0 +1,62 @@
+{
+  "identificacion": {
+    "version": 1,
+    "ambiente": "00",
+    "tipoDte": null,
+    "numeroControl": null,
+    "codigoGeneracion": null,
+    "tipoModelo": 1,
+    "tipoOperacion": 1,
+    "tipoContingencia": null,
+    "motivoContin": null,
+    "fecEmi": null,
+    "horEmi": null,
+    "tipoMoneda": "USD"
+  },
+  "documentoRelacionado": null,
+  "emisor": {
+    "nit": "06082504011025",
+    "nrc": "456369",
+    "nombre": "DEYNIS WAFFLE HOUSE DEMO S.A. DE C.V.",
+    "codActividad": "56101",
+    "descActividad": "Restaurantes y servicios móviles de comidas",
+    "nombreComercial": "Deynis Waffle House",
+    "tipoEstablecimiento": "02",
+    "direccion": {
+      "departamento": "06",
+      "municipio": "14",
+      "complemento": "Blvr. Sergio Viera de Mello & Avenida La Capilla, San Salvador"
+    },
+    "telefono": "21248428",
+    "correo": "demo@deynis-waffle.example",
+    "codEstableMH": null,
+    "codEstable": null,
+    "codPuntoVentaMH": null,
+    "codPuntoVenta": null
+  },
+  "receptor": {
+    "tipoDocumento": null,
+    "numDocumento": null,
+    "nrc": null,
+    "nombre": null,
+    "codActividad": null,
+    "descActividad": null,
+    "direccion": null,
+    "telefono": null,
+    "correo": null
+  },
+  "otrosDocumentos": null,
+  "ventaTercero": null,
+  "cuerpoDocumento": [],
+  "resumen": {},
+  "extension": null,
+  "apendice": null,
+  "responseMH": {
+    "estado": null,
+    "codigoMsg": null,
+    "descripcionMsg": null,
+    "fhProcesamiento": null,
+    "selloRecibido": null
+  },
+  "codigoEmpresa": "DEYNIS"
+}

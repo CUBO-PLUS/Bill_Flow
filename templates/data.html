@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Data{% endblock %}
+{% block cardclass %}wide{% endblock %}
+{% block content %}
+<style>
+  .card.wide { max-width: 96rem; }
+  .muted { color: #64748b; font-size: .85rem; }
+  .back { background: #64748b; display: inline-block; width: auto; padding: .5rem 1.2rem; margin: 0; }
+  .lucid { background: #16a34a; display: inline-block; width: auto; padding: .4rem 1rem; margin: 0 0 0 .5rem; }
+  .scroll { overflow: auto; border: 1px solid #e2e8f0; border-radius: .6rem; margin-top: .8rem;
+            background: #fff; background-image: linear-gradient(#f1f5f9 1px, transparent 1px),
+            linear-gradient(90deg, #f1f5f9 1px, transparent 1px); background-size: 20px 20px; }
+  #canvas { position: relative; }
+  #lines { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+  .ent { position: absolute; width: 300px; background: #fff; border: 1.5px solid #0f172a; border-radius: 10px;
+         font-size: 13px; z-index: 2; cursor: pointer; transition: box-shadow .15s; }
+  .ent:hover { box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+  .ent.open { width: 640px; z-index: 5; cursor: default; box-shadow: 0 8px 28px rgba(0,0,0,.28); }
+  .ent h3 { margin: 0; padding: 6px 10px; text-align: center; font-size: 13px; letter-spacing: .04em;
+            text-transform: uppercase; border-bottom: 1.5px solid #0f172a; position: relative; }
+  .ent h3 .n { position: absolute; right: 8px; top: 5px; background: #dbeafe; color: #1e40af;
+               border-radius: 999px; padding: 0 7px; font-size: 11px; letter-spacing: 0; }
+  .ent h3 button { position: absolute; left: 6px; top: 3px; width: auto; margin: 0; padding: 1px 9px;
+                   font-size: 14px; line-height: 1.3; background: #0f172a; }
+  .ent table.cols { margin: 0; width: 100%; border-collapse: collapse; }
+  .cols td { padding: 3px 8px; border-bottom: 1px solid #e2e8f0; font-size: 12.5px; }
+  .cols tr:last-child td { border-bottom: 0; }
+  .cols td.k { width: 2.4rem; font-weight: 700; border-right: 1px solid #0f172a; text-align: center; }
+  .cols td.t { text-align: right; color: #334155; border-left: 1px solid #0f172a; width: 6.5rem; }
+  .hint { text-align: center; color: #94a3b8; font-size: 11px; padding: 3px; border-top: 1px solid #e2e8f0; }
+  .rows { display: none; border-top: 1.5px solid #0f172a; max-height: 55vh; overflow: auto; }
+  .open .rows { display: block; } .open .hint { display: none; }
+  .rows table { margin: 0; width: 100%; font-size: 12px; }
+  .rows th { position: sticky; top: 0; background: #f1f5f9; padding: 4px 8px; }
+  .rows td { padding: 3px 8px; white-space: nowrap; }
+  .rows tr.nuevo td { animation: flash 4s ease-out; }
+  @keyframes flash { 0% { background: #bbf7d0; } 100% { background: transparent; } }
+</style>
+<div class="topbar">
+  <h1>Data · base de datos real</h1>
+  <a class="btn back" href="{{ url_for('panel') }}">← Panel</a>
+</div>
+<p class="muted"><span id="resumen">Cargando…</span> · se actualiza solo cada 4 s · clic en una tabla para ver todas sus filas.
+  {% if lucid_url %}<a class="btn lucid" href="{{ lucid_url }}" target="_blank">Abrir en Lucid</a>
+  {% else %}Lucid: usa la skill <i>actualizar-lucid-erd</i>.{% endif %}</p>
+<div class="scroll"><div id="canvas"><svg id="lines"></svg></div></div>
+
+<script>
+const NOMBRES_CLIENTES = ['Mateo Rodríguez','Valentina Morales','Santiago Herrera','Camila Fernández','Gabriel Mendoza','Lucía Castillo','Nicolás Vargas','Isabella Ramírez','Sebastián Aguilar','Mariana Fuentes','Emiliano Torres','Daniela Rivas','Alejandro Paredes','Sofía Cabrera','Leonardo Guzmán','Gabriela Navarro','Adrián Velásquez','Natalia Escobar','Joaquín Salazar','Renata Villalobos','Diego Montoya','Antonella Méndez','Rafael Cárdenas','Julieta Peralta','Mauricio Lozano','Abril Quintanilla','Bruno Zamora','Elena Figueroa','Tomás Benítez','Carolina Santamaría'];
+// Solo visual: NO se guarda en la base de datos. Estable por id de venta (siempre el mismo nombre por fila).
+function nombreVisual(id) {
+  const n = Number(id);
+  return NOMBRES_CLIENTES[(Number.isFinite(n) ? n * 7 : 0) % NOMBRES_CLIENTES.length];
+}
+
+const POS = {  // [columna, fila] como el diagrama de referencia
+  rol: [0,0], empleado: [1,0], venta_bitcoin: [2,0], estado_dte: [3,0],
+  forma_pago: [0,1], venta: [1,1], tipo_cliente: [2,1], detalle_venta: [3,1],
+  categoria_menu: [0,2], platillo: [1,2]
+};
+const COLW = 400, ROWH = 400, PAD = 30;
+const canvas = document.getElementById('canvas'), svg = document.getElementById('lines');
+let abiertas = new Set(JSON.parse(localStorage.getItem('dataAbiertas') || '[]'));
+let vistas = {}, ultimo = '', datos = null;
+
+function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+
+function render() {
+  const nuevas = {};
+  canvas.querySelectorAll('.ent').forEach(n => n.remove());
+  let extra = 0, maxc = 3, maxr = 2;
+  datos.entidades.forEach(e => {
+    let p = POS[e.name];
+    if (!p) { p = [extra++ % 4, 3 + Math.floor((extra - 1) / 4)]; }
+    maxc = Math.max(maxc, p[0]); maxr = Math.max(maxr, p[1]);
+    const abierta = abiertas.has(e.name);
+    const box = el('div', 'ent' + (abierta ? ' open' : '')); box.id = 'ent-' + e.name;
+    box.style.left = (PAD + p[0] * COLW) + 'px'; box.style.top = (PAD + p[1] * ROWH) + 'px';
+    const h = el('h3', null, e.name); h.appendChild(el('span', 'n', e.rows));
+    if (abierta) { const b = el('button', null, '−'); b.title = 'Hacer pequeña';
+      b.onclick = ev => { ev.stopPropagation(); abiertas.delete(e.name); guardar(); render(); }; h.prepend(b); }
+    box.appendChild(h);
+    const t = el('table', 'cols');
+    e.attributes.forEach(a => {
+      const tr = el('tr'); tr.dataset.col = a.name;
+      tr.appendChild(el('td', 'k', a.key ? (a.fk ? 'PK,FK' : 'PK') : (a.fk ? 'FK' : '')));
+      tr.appendChild(el('td', null, a.name)); tr.appendChild(el('td', 't', a.type.replace(' NOT NULL', '')));
+      t.appendChild(tr);
+    });
+    box.appendChild(t);
+    box.appendChild(el('div', 'hint', 'clic para ver ' + e.rows + ' filas'));
+    const rows = el('div', 'rows'), rt = el('table');
+    const hr = el('tr'); e.columns.forEach(c => hr.appendChild(el('th', null, c))); rt.appendChild(hr);
+    const prev = vistas[e.name]; nuevas[e.name] = new Set();
+    e.sample.forEach(f => {
+      const tr = el('tr'); const clave = JSON.stringify(f); nuevas[e.name].add(clave);
+      if (prev && !prev.has(clave)) tr.className = 'nuevo';
+      f.forEach((v, i) => {
+        if (v == null && e.columns[i] === 'cliente_nombre') v = nombreVisual(f[e.columns.indexOf('id')]);
+        tr.appendChild(el('td', null, v == null ? '—' : v));
+      });
+      rt.appendChild(tr);
+    });
+    rows.appendChild(rt); box.appendChild(rows);
+    box.onclick = () => { if (!abiertas.has(e.name)) { abiertas.add(e.name); guardar(); render(); } };
+    canvas.appendChild(box);
+  });
+  vistas = nuevas;
+  canvas.style.width = (PAD * 2 + (maxc + 1) * COLW) + 'px';
+  canvas.style.height = (PAD * 2 + (maxr + 1) * ROWH) + 'px';
+  requestAnimationFrame(lineas);
+}
+function guardar() { try { localStorage.setItem('dataAbiertas', JSON.stringify([...abiertas])); } catch (e) {} }
+
+function lineas() {
+  svg.setAttribute('width', canvas.offsetWidth); svg.setAttribute('height', canvas.offsetHeight);
+  const cr = canvas.getBoundingClientRect(); let out = '', n = 0;
+  const pt = (tabla, col) => {
+    const b = document.getElementById('ent-' + tabla); if (!b) return null;
+    const r = b.getBoundingClientRect(), tr = b.querySelector('tr[data-col="' + col + '"]').getBoundingClientRect();
+    return { l: r.left - cr.left, r: r.right - cr.left, y: tr.top + tr.height / 2 - cr.top };
+  };
+  datos.relaciones.forEach((rel, i) => {
+    const a = pt(rel.from, rel.fromAttribute), b = pt(rel.to, rel.toAttribute); if (!a || !b) return;
+    let x1, x2, d1, d2, xm;  // d = dirección en la que sale la línea de cada extremo
+    if (a.r + 20 <= b.l) { x1 = a.r; d1 = 1; x2 = b.l; d2 = -1; xm = (x1 + x2) / 2 + (i % 3 - 1) * 8; }
+    else if (b.r + 20 <= a.l) { x1 = a.l; d1 = -1; x2 = b.r; d2 = 1; xm = (x1 + x2) / 2 + (i % 3 - 1) * 8; }
+    else { x1 = a.r; d1 = 1; x2 = b.r; d2 = 1; xm = Math.max(a.r, b.r) + 18 + (i % 4) * 7; }
+    out += '<path d="M' + x1 + ' ' + a.y + 'H' + xm + 'V' + b.y + 'H' + x2 + '" fill="none" stroke="#0f172a" stroke-width="1.4"/>';
+    // pata de gallo (lado FK, "muchos") y barra (lado PK, "uno")
+    const g = 10;
+    if (rel.fromCardinality === 'exactlyOne') out += '<path d="M' + (x1 + d1 * g) + ' ' + (a.y - 6) + 'V' + (a.y + 6) + '" stroke="#0f172a" stroke-width="1.6"/>';
+    else out += '<path d="M' + (x1 + d1 * g) + ' ' + a.y + 'L' + x1 + ' ' + (a.y - 6) + 'M' + (x1 + d1 * g) + ' ' + a.y + 'L' + x1 + ' ' + (a.y + 6) + '" stroke="#0f172a" stroke-width="1.4" fill="none"/>';
+    out += '<path d="M' + (x2 + d2 * 8) + ' ' + (b.y - 6) + 'V' + (b.y + 6) + '" stroke="#0f172a" stroke-width="1.6"/>';
+    n++;
+  });
+  svg.innerHTML = out;
+}
+
+async function cargar() {
+  try {
+    const r = await fetch('{{ url_for("data_json") }}', { cache: 'no-store' });
+    if (r.status !== 200 || r.redirected) { location.href = '{{ url_for("panel") }}'; return; }
+    const txt = await r.text(); if (txt === ultimo) return; ultimo = txt;
+    datos = JSON.parse(txt);
+    document.getElementById('resumen').textContent = datos.entidades.length + ' tablas · ' + datos.relaciones.length +
+      ' llaves foráneas · ' + datos.entidades.reduce((s, e) => s + e.rows, 0) + ' filas';
+    render();
+  } catch (e) { /* reintenta en el próximo ciclo */ }
+}
+cargar(); setInterval(cargar, 4000); addEventListener('resize', () => datos && lineas());
+</script>
+{% endblock %}
