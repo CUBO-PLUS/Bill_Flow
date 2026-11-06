@@ -10,7 +10,7 @@ DROP TABLE IF EXISTS detalle_venta;
 DROP TABLE IF EXISTS venta;
 DROP TABLE IF EXISTS empleado;
 DROP TABLE IF EXISTS rol;
-DROP TABLE IF EXISTS estado_dte;
+DROP TABLE IF EXISTS DTE_State;
 DROP TABLE IF EXISTS forma_pago;
 DROP TABLE IF EXISTS tipo_cliente;
 DROP TABLE IF EXISTS platillo;
@@ -41,10 +41,11 @@ CREATE TABLE forma_pago (
     codigo  TEXT NOT NULL,                       -- Bitcoin y Lightning comparten el código 11
     nombre  TEXT NOT NULL UNIQUE
 );
-CREATE TABLE estado_dte (
-    id      INTEGER PRIMARY KEY,
-    paso    INTEGER NOT NULL UNIQUE,
-    nombre  TEXT NOT NULL
+CREATE TABLE DTE_State (
+    id           INTEGER PRIMARY KEY,
+    paso         INTEGER NOT NULL UNIQUE,
+    nombre       TEXT NOT NULL,
+    descripcion  TEXT
 );
 CREATE TABLE rol (
     id      INTEGER PRIMARY KEY,
@@ -69,12 +70,12 @@ CREATE TABLE venta (
     tipo_cliente_id  INTEGER NOT NULL,           -- FK -> tipo_cliente.id
     forma_pago_id    INTEGER NOT NULL,           -- FK -> forma_pago.id
     empleado_id      INTEGER,                    -- FK -> empleado.id ("Registrado por")
-    estado_dte_id    INTEGER,                    -- FK -> estado_dte.id
+    estado_dte_id    INTEGER,                    -- FK -> DTE_State.id
     precio_btc_usd   REAL CHECK (precio_btc_usd IS NULL OR precio_btc_usd >= 0),
     FOREIGN KEY (tipo_cliente_id) REFERENCES tipo_cliente(id),
     FOREIGN KEY (forma_pago_id)   REFERENCES forma_pago(id),
     FOREIGN KEY (empleado_id)     REFERENCES empleado(id),
-    FOREIGN KEY (estado_dte_id)   REFERENCES estado_dte(id)
+    FOREIGN KEY (estado_dte_id)   REFERENCES DTE_State(id)
 );
 CREATE TABLE detalle_venta (
     id               INTEGER PRIMARY KEY,        -- "ID Detalle"
@@ -213,12 +214,12 @@ INSERT INTO forma_pago (id, codigo, nombre) VALUES (11, '12', 'Otras criptomoned
 INSERT INTO forma_pago (id, codigo, nombre) VALUES (12, '99', 'Otros');
 INSERT INTO forma_pago (id, codigo, nombre) VALUES (13, '11', 'Bitcoin Lightning');
 
--- estado_dte
-INSERT INTO estado_dte (id, paso, nombre) VALUES (1, 1, 'Recibos emitidos');
-INSERT INTO estado_dte (id, paso, nombre) VALUES (2, 2, 'DTE emitidos');
-INSERT INTO estado_dte (id, paso, nombre) VALUES (3, 3, 'DTE firmado por comerciante');
-INSERT INTO estado_dte (id, paso, nombre) VALUES (4, 4, 'DTE mandados a Hacienda');
-INSERT INTO estado_dte (id, paso, nombre) VALUES (5, 5, 'DTE con sello de confirmación de Hacienda');
+-- DTE_State
+INSERT INTO DTE_State (id, paso, nombre, descripcion) VALUES (1, 1, 'Bill only', 'Recibos emitidos');
+INSERT INTO DTE_State (id, paso, nombre, descripcion) VALUES (2, 2, 'DTE Done', 'DTE emitidos');
+INSERT INTO DTE_State (id, paso, nombre, descripcion) VALUES (3, 3, 'DTE Signed', 'DTE firmado por comerciante');
+INSERT INTO DTE_State (id, paso, nombre, descripcion) VALUES (4, 4, 'DTE Sended', 'DTE mandados a Hacienda');
+INSERT INTO DTE_State (id, paso, nombre, descripcion) VALUES (5, 5, 'DTE Approved', 'DTE con sello de confirmación de Hacienda');
 
 -- rol
 INSERT INTO rol (id, nombre) VALUES (1, 'Asistente de caja');

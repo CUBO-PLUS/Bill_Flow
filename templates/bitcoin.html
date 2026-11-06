@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pagos Bitcoin</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#fff7ec;color:#1f2937;min-height:100vh;padding:1.2rem 16px}
+  .wrap{max-width:1200px;margin:0 auto}
+  .hd{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+  .titulo{display:flex;align-items:center;gap:.8rem}
+  .titulo img{width:46px;height:46px;flex:none}
+  h1{margin:0;font-size:1.6rem;color:#7c3a00}
+  .sub{color:#9a7150;font-size:.88rem;margin-top:.15rem}
+  .volver{text-decoration:none;background:#fde2c0;color:#7c3a00;padding:.5rem 1.1rem;border-radius:8px;font-weight:600;font-size:.95rem}
+  .volver:hover{background:#fbd29b}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem;margin-bottom:1rem}
+  .kpi{background:#fff;border-radius:14px;padding:1rem 1.1rem;box-shadow:0 2px 10px #7c3a0014;border-top:5px solid var(--c)}
+  .kpi small,.hero small{display:block;color:#9a7150;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em}
+  .kpi b{display:block;font-size:1.75rem;margin:.25rem 0 .15rem;font-variant-numeric:tabular-nums}
+  .kpi span,.hero span{font-size:.85rem;color:#6b7280}
+  .panel{background:#fff;border-radius:14px;padding:1rem 1.1rem;box-shadow:0 2px 10px #7c3a0014;margin-bottom:1rem}
+  h2{font-size:1.05rem;margin:1.2rem 0 .7rem;color:#7c3a00}
+  .avance{display:flex;height:16px;border-radius:99px;overflow:hidden;background:#fde68a}
+  .avance i{display:block;height:100%;background:#16a34a}
+  .leyenda{display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:#4b5563;margin-top:.5rem}
+  .leyenda i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+  .pills{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+  .pill{padding:3px 10px;border-radius:99px;font-size:.75rem;font-weight:700;letter-spacing:.03em;white-space:nowrap}
+  .pendiente{background:#fef3c7;color:#92400e}
+  .pagada{background:#dcfce7;color:#166534}
+  .rechazada{background:#fee2e2;color:#991b1b}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem}
+  .pago{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 14px #7c3a0018;display:flex;flex-direction:column}
+  .pago .top{background:linear-gradient(135deg,#f7931a,#fb923c);color:#fff;padding:.9rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem}
+  .pago .top small{opacity:.92;font-size:.8rem}
+  .idp{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:1.05rem;letter-spacing:.04em;margin-top:.2rem}
+  .hero{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;padding:1rem;border-bottom:1px dashed #fed7aa}
+  .hero b{display:block;font-size:1.45rem;margin-top:.15rem;font-variant-numeric:tabular-nums}
+  .hero .sats b{color:#c2570c}
+  .split{padding:.8rem 1rem;border-bottom:1px dashed #fed7aa}
+  .split-bar{display:flex;height:10px;border-radius:99px;overflow:hidden;background:#e5e7eb}
+  .split-bar .neto{background:#f7931a}
+  .split-bar .iva{background:#fcd34d}
+  .split-leg{display:flex;justify-content:space-between;gap:.5rem;font-size:.8rem;color:#4b5563;margin-top:.4rem;font-variant-numeric:tabular-nums}
+  dl{margin:0;padding:.8rem 1rem 1rem;display:grid;grid-template-columns:auto 1fr;gap:.45rem .8rem;font-size:.88rem}
+  dt{color:#6b7280}
+  dd{margin:0;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;word-break:break-word}
+  .vacio{background:#fff;border-radius:14px;padding:2rem;text-align:center;color:#9a7150}
+  .tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:0 0 1rem}
+  .tab{text-decoration:none;padding:.5rem 1.2rem;border-radius:999px;font-weight:600;font-size:.95rem;background:#fff;color:#7c3a00;box-shadow:0 1px 3px #0001}
+  .tab:hover{background:#fde2c0}
+  .tab.on{background:#f7931a;color:#fff}
+  .nota{color:#9a7150;font-size:.8rem;margin:1.2rem 0 0;text-align:center}
+  @media (max-width:520px){.hero{grid-template-columns:1fr}.hd{justify-content:center;text-align:center}}
+</style></head>
+<body>
+<div class="wrap">
+  <div class="hd">
+    <div class="titulo">
+      <img src="{{ url_for('static', filename='bitcoin.svg') }}" alt="Bitcoin">
+      <div><h1>Pagos Bitcoin</h1><div class="sub">{{ r.pagos }} pagos · {{ periodo }} · {% if desde == hasta %}{{ desde }}{% else %}{{ desde }} – {{ hasta }}{% endif %}</div></div>
+    </div>
+    <a class="volver" href="{{ url_for('panel') }}">← Volver al panel</a>
+  </div>
+
+  <div class="tabs">
+    <a class="tab {% if rango == 'hoy' %}on{% endif %}" href="{{ url_for('bitcoin_detalle', rango='hoy') }}">Día</a>
+    <a class="tab {% if rango == 'semana' %}on{% endif %}" href="{{ url_for('bitcoin_detalle', rango='semana') }}">Semana</a>
+    <a class="tab {% if rango == 'mes' %}on{% endif %}" href="{{ url_for('bitcoin_detalle', rango='mes') }}">Mes</a>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi" style="--c:#f7931a"><small>Total en sats</small><b>{{ '{:,}'.format(r.sats) }}</b><span>₿ {{ '%.8f' % r.btc }} BTC</span></div>
+    <div class="kpi" style="--c:#16a34a"><small>Total USD (IVA incl.)</small><b>${{ '{:,.2f}'.format(r.usd) }}</b><span>Neto ${{ '{:,.2f}'.format(r.neto) }} · IVA ${{ '{:,.2f}'.format(r.iva) }}</span></div>
+    <div class="kpi" style="--c:#22c55e"><small>Cobrado</small><b>${{ '{:,.2f}'.format(r.usd_pagado) }}</b><span>{{ '{:,}'.format(r.sats_pagado) }} sats · {{ r.estados.pagada }} pagos</span></div>
+    <div class="kpi" style="--c:#f59e0b"><small>Por cobrar</small><b>${{ '{:,.2f}'.format(r.usd_pendiente) }}</b><span>{{ '{:,}'.format(r.sats_pendiente) }} sats · {{ r.estados.pendiente }} pendientes</span></div>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">Avance de cobros (en USD)</h2>
+    <div class="avance"><i style="width:{{ '%.1f' % r.pct_pagado }}%"></i></div>
+    <div class="leyenda">
+      <span><i style="background:#16a34a"></i>Cobrado {{ '%.1f' % r.pct_pagado }}%</span>
+      <span><i style="background:#fcd34d"></i>Por cobrar {{ '%.1f' % (100 - r.pct_pagado) }}%</span>
+    </div>
+    <div class="pills">
+      <span class="pill pendiente">Pendientes: {{ r.estados.pendiente }}</span>
+      <span class="pill pagada">Pagadas: {{ r.estados.pagada }}</span>
+      <span class="pill rechazada">Rechazadas: {{ r.estados.rechazada }}</span>
+    </div>
+  </div>
+
+  <h2>Detalle por pago</h2>
+  <div class="cards">
+    {% for p in pagos %}
+    <article class="pago">
+      <div class="top">
+        <div><small>Venta #{{ '%04d' % p.venta_id }} · {{ p.fecha_hora }}</small><div class="idp">{{ p.id_pago }}</div></div>
+        <span class="pill {{ p.estado }}">{{ p.estado|upper }}</span>
+      </div>
+      <div class="hero">
+        <div class="sats"><small>Sats</small><b>{{ '{:,}'.format(p.total_sats) }}</b><span>{{ '%.8f' % p.total_btc }} BTC</span></div>
+        <div><small>Total USD</small><b>${{ '{:,.2f}'.format(p.total_usd) }}</b><span>IVA incl.</span></div>
+      </div>
+      <div class="split">
+        <div class="split-bar"><i class="neto" style="width:{{ '%.2f' % p.pct_neto }}%"></i><i class="iva" style="width:{{ '%.2f' % p.pct_iva }}%"></i></div>
+        <div class="split-leg"><span>Neto ${{ '{:,.2f}'.format(p.neto_usd) }}</span><span>IVA 13% ${{ '{:,.2f}'.format(p.iva_usd) }}</span></div>
+      </div>
+      <dl>
+        <dt>Precio BTC/USD</dt><dd>${{ '{:,.2f}'.format(p.precio_btc_usd) }}</dd>
+        <dt>Neto en BTC</dt><dd>{{ '%.8f' % p.neto_btc }}</dd>
+        <dt>IVA en BTC</dt><dd>{% if p.iva_btc is not none %}{{ '%.8f' % p.iva_btc }}{% else %}—{% endif %}</dd>
+        <dt>Fuente</dt><dd>{{ p.fuente_precio or '—' }}</dd>
+        <dt>Consulta (UTC)</dt><dd>{{ p.consulta }}</dd>
+        <dt>Registrado por</dt><dd>{{ p.empleado or '—' }}</dd>
+      </dl>
+    </article>
+    {% else %}
+    <div class="vacio">No hay pagos Bitcoin en este periodo.</div>
+    {% endfor %}
+  </div>
+  <p class="nota">Los montos y el precio se guardan al registrar la venta y no se modifican. El total incluye IVA 13%.</p>
+</div>
+</body>
+</html>

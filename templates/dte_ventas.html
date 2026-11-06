@@ -14,7 +14,11 @@
       <div class="menu-items">
         <a href="{{ url_for('dte_recibo', vid=v['id']) }}" target="_blank">Recibo PDF</a>
         <a href="{{ url_for('dte_json', vid=v['id']) }}">Descargar DTE (JSON)</a>
-        <a href="#" onclick="return false;">JWS (signed DTE)</a>
+        {% if v['jws'] %}
+        <a href="{{ url_for('dte_jws', vid=v['id']) }}">JWS (Signed DTE)</a>
+        {% else %}
+        <a href="#" onclick="return false;" style="color:#aaa;cursor:default">JWS (not signed yet)</a>
+        {% endif %}
       </div></div></td>
   </tr>
   {% else %}<tr><td colspan="7">Todavía no hay ventas.</td></tr>{% endfor %}

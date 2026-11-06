@@ -6,12 +6,19 @@
   a.cierre-btn { text-decoration:none; display:inline-block; width:auto; margin:0; background:#bfdbfe; color:#1e3a8a; padding:.55rem 1.3rem;
                 border-radius:8px; font-weight:600; font-size:1rem; border:0; cursor:pointer; }
   .cierre-btn:hover { background:#93c5fd; }
+  a.btc-btn { text-decoration:none; display:inline-flex; align-items:center; gap:.5rem; background:#f7931a; color:#3b1d00;
+              padding:.45rem 1.2rem .45rem .45rem; border-radius:8px; font-weight:700; font-size:1rem; box-shadow:0 2px 6px #f7931a66; }
+  a.btc-btn:hover { background:#e07f0b; }
+  .btc-badge { width:1.5rem; height:1.5rem; border-radius:50%; background:#fff; display:inline-flex; align-items:center;
+               justify-content:center; box-shadow:0 1px 3px #0003; flex:none; }
+  .btc-badge img { width:1.15rem; height:1.15rem; display:block; }
 </style>
 <div class="topbar">
   <h1>Hola, {{ session['username'] }}
     <span class="badge">{{ session['rol'] }}</span>
   </h1>
-  {% if session['es_admin'] %}<span><a class="cierre-btn" href="{{ url_for('cierre') }}">Cierre diario</a> <a class="dte-btn" href="{{ url_for('dte_lista') }}">DTE details</a> <a class="data-btn" href="{{ url_for('data') }}">Data</a></span>{% endif %}
+  {% if session['es_admin'] %}<span><a class="btc-btn" href="{{ url_for('bitcoin_detalle') }}" title="Detalle de pagos Bitcoin"><span class="btc-badge"><img src="{{ url_for('static', filename='bitcoin.svg') }}" alt="Bitcoin"></span>Detail</a> <a class="cierre-btn" href="{{ url_for('cierre') }}">Cierre diario</a> <a class="dte-btn" href="{{ url_for('dte_lista') }}">DTE details</a> <a class="data-btn" href="{{ url_for('data') }}">Data</a>
+  <form method="post" action="{{ url_for('firmar_pendientes') }}" style="display:inline;margin:0"><button class="small-btn" type="submit" style="background:#166534;font-size:.9rem" title="Firma todos los DTEs Signed/Sended/Approved que aún no tienen JWS">Sign All</button></form></span>{% endif %}
 </div>
 
 {% if true %}
@@ -42,9 +49,15 @@
     {% if session['es_admin'] %}
     <td>
       {% if (v['paso'] or 0) < 5 %}
-      <form method="post" action="{{ url_for('avanzar_venta', vid=v['id']) }}" style="margin:0">
-        <button class="small-btn" type="submit">Avanzar</button>
-      </form>
+        {% if v['paso'] == 2 %}
+        <form method="post" action="{{ url_for('firmar_venta', vid=v['id']) }}" style="margin:0">
+          <button class="small-btn" type="submit">Sign DTE</button>
+        </form>
+        {% else %}
+        <form method="post" action="{{ url_for('avanzar_venta', vid=v['id']) }}" style="margin:0">
+          <button class="small-btn" type="submit">{{ {1: "Do DTE", 3: "Send DTE", 4: "Approve DTE"}[v["paso"] or 1] }}</button>
+        </form>
+        {% endif %}
       {% endif %}
     </td>
     {% endif %}

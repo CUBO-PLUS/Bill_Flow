@@ -74,6 +74,55 @@ def codigo_pago(tipo_dte, codigo):
     return codigo
 
 
+# codigoGeneracion: UUID en MAYÚSCULAS, distinto para cada DTE y guardado una sola vez en dte_codigo.
+# Las ventas que ya existían conservan el código que tenían (uuid5 por venta) para no cambiar nada.
+SQL_DTE_CODIGO = """
+CREATE TABLE IF NOT EXISTS dte_codigo (
+    venta_id          INTEGER NOT NULL,
+    tipo_dte          TEXT NOT NULL,
+    codigo_generacion TEXT NOT NULL UNIQUE
+                      CHECK (length(codigo_generacion) = 36 AND codigo_generacion = upper(codigo_generacion)),
+    creado_utc        TEXT NOT NULL,
+    PRIMARY KEY (venta_id, tipo_dte),
+    FOREIGN KEY (venta_id) REFERENCES venta(id)
+);
+CREATE TRIGGER IF NOT EXISTS dte_codigo_no_update BEFORE UPDATE ON dte_codigo
+BEGIN SELECT RAISE(ABORT, 'codigoGeneracion es inmutable'); END;
+CREATE TRIGGER IF NOT EXISTS dte_codigo_no_delete BEFORE DELETE ON dte_codigo
+BEGIN SELECT RAISE(ABORT, 'codigoGeneracion es inmutable'); END;
+"""
+
+
+def _codigo_legado(venta_id):
+    return str(uuid.uuid5(NS, "venta-%d" % venta_id)).upper()
+
+
+def migrar(db):
+    """Idempotente: crea dte_codigo y asigna código a las ventas que todavía no lo tienen."""
+    db.executescript(SQL_DTE_CODIGO)
+    pendientes = db.execute(
+        "SELECT v.id, t.codigo FROM venta v JOIN tipo_cliente t ON t.id = v.tipo_cliente_id "
+        "WHERE NOT EXISTS (SELECT 1 FROM dte_codigo d WHERE d.venta_id = v.id AND d.tipo_dte = t.codigo)"
+    ).fetchall()
+    for vid, tipo in pendientes:
+        db.execute("INSERT INTO dte_codigo (venta_id, tipo_dte, codigo_generacion, creado_utc) "
+                   "VALUES (?, ?, ?, datetime('now'))", (vid, tipo, _codigo_legado(vid)))
+    db.commit()
+
+
+def obtener_codigo_generacion(db, venta_id, tipo_dte):
+    """codigoGeneracion del DTE de esa venta y tipo. La primera vez crea un UUID v4 en MAYÚSCULAS y lo guarda.
+    No confirma la transacción: quien llama hace commit."""
+    fila = db.execute("SELECT codigo_generacion FROM dte_codigo WHERE venta_id = ? AND tipo_dte = ?",
+                      (venta_id, tipo_dte)).fetchone()
+    if fila:
+        return fila[0]
+    codigo = str(uuid.uuid4()).upper()
+    db.execute("INSERT INTO dte_codigo (venta_id, tipo_dte, codigo_generacion, creado_utc) "
+               "VALUES (?, ?, ?, datetime('now'))", (venta_id, tipo_dte, codigo))
+    return codigo
+
+
 def construir_dte(db, venta_id):
     db.row_factory = sqlite3.Row
     v = db.execute("""SELECT v.*, t.codigo AS tipo_dte, fp.codigo AS pago_cod, fp.nombre AS pago_nombre,
@@ -89,10 +138,12 @@ def construir_dte(db, venta_id):
                           WHERE d.venta_id = ? ORDER BY d.id""", (venta_id,)).fetchall()
     tipo = v["tipo_dte"]
     dte = json.load(open(PLANTILLA, encoding="utf-8"))
+    codigo = obtener_codigo_generacion(db, venta_id, tipo)
+    db.commit()
     partes = (v["fecha_hora"] or "").split(" ")
     dte["identificacion"].update(
         tipoDte=tipo, fecEmi=partes[0], horEmi=partes[-1],
-        codigoGeneracion=str(uuid.uuid5(NS, "venta-%d" % venta_id)).upper(),  # estable por venta
+        codigoGeneracion=codigo,
         numeroControl="DTE-%s-S001P001-%015d" % (tipo, venta_id))
     if tipo == "03":
         dte["identificacion"]["version"] = 3
@@ -164,7 +215,9 @@ def construir_dte(db, venta_id):
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
-    d = construir_dte(sqlite3.connect(DB_PATH), int(sys.argv[1]))
+    con = sqlite3.connect(DB_PATH)
+    migrar(con)
+    d = construir_dte(con, int(sys.argv[1]))
     if d is None:
         raise SystemExit("No existe esa venta")
     txt = json.dumps(d, ensure_ascii=False, indent=2)

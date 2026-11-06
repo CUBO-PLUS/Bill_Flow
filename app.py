@@ -3,6 +3,7 @@ import os
 import re
 import threading
 from datetime import datetime, timedelta
+from decimal import Decimal
 import sqlite3
 from functools import wraps
 
@@ -10,6 +11,7 @@ from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_t
                    session, url_for)
 import bitcoin
 import dte as dte_mod
+import firmar as firmar_mod
 import esquema
 import recibo_pdf
 import precios_btc
@@ -19,6 +21,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "demo-cambiar-clave")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "restaurante.db"))
+FIRMADOR_NIT      = os.environ.get("FIRMADOR_NIT",      "06082504011025")
+FIRMADOR_PASSWORD = os.environ.get("FIRMADOR_PASSWORD", "test123")
 SCHEMA_PATH = os.path.join(BASE_DIR, "restaurante_db.sql")
 
 # Datos fiscales del cliente (CCF): NO van a la base de datos (se verían en el
@@ -123,6 +127,14 @@ def migrar_lightning(db):
     db.commit()
 
 
+def migrar_jws(db):
+    """Agrega columna jws a venta para guardar el JWS firmado (idempotente)."""
+    cols = [r[1] for r in db.execute("PRAGMA table_info(venta)").fetchall()]
+    if "jws" not in cols:
+        db.execute("ALTER TABLE venta ADD COLUMN jws TEXT")
+        db.commit()
+
+
 def init_db():
     """Crea la base desde restaurante_db.sql la primera vez."""
     db = sqlite3.connect(DB_PATH)
@@ -137,6 +149,8 @@ def init_db():
     # Pagos Bitcoin: tablas, columnas de trazabilidad y triggers (idempotente)
     db.row_factory = sqlite3.Row
     bitcoin.migrar(db)
+    dte_mod.migrar(db)
+    migrar_jws(db)
     db.close()
 
 
@@ -234,12 +248,12 @@ VENTAS_SQL = """
     SELECT v.id, v.fecha_hora, v.cliente_nombre, tc.documento,
            fp.nombre AS forma_pago, e.nombre_usuario AS empleado,
            ed.paso, ed.nombre AS estado, t.total_usd,
-           vb.estado AS btc_estado, vb.id_pago AS btc_id_pago
+           vb.estado AS btc_estado, vb.id_pago AS btc_id_pago, v.jws
     FROM venta v
     JOIN tipo_cliente tc ON tc.id = v.tipo_cliente_id
     JOIN forma_pago fp ON fp.id = v.forma_pago_id
     LEFT JOIN empleado e ON e.id = v.empleado_id
-    LEFT JOIN estado_dte ed ON ed.id = v.estado_dte_id
+    LEFT JOIN DTE_State ed ON ed.id = v.estado_dte_id
     LEFT JOIN v_venta_total t ON t.venta_id = v.id
     LEFT JOIN venta_bitcoin vb ON vb.venta_id = v.id
 """
@@ -369,12 +383,95 @@ def cierre_json():
         recibos=ventas)
 
 
+@app.route("/bitcoin")
+@login_required
+@admin_required
+def bitcoin_detalle():
+    """Detalle de los pagos Bitcoin (tabla venta_bitcoin) por día, semana o mes. Solo lectura."""
+    rango = request.args.get("rango", "hoy")
+    if rango not in RANGOS:
+        rango = "hoy"
+    ini, fin = _rango_fechas(rango)
+    db = get_db()
+    pagos = [dict(r) for r in db.execute(
+        "SELECT vb.*, e.nombre_usuario AS empleado FROM venta_bitcoin vb "
+        "LEFT JOIN empleado e ON e.id = vb.empleado_id "
+        "WHERE vb.fecha_hora >= ? AND vb.fecha_hora < ? ORDER BY vb.id DESC",
+        (ini.strftime("%Y-%m-%d %H:%M:%S"), fin.strftime("%Y-%m-%d %H:%M:%S")))]
+
+    def dec(x):
+        return Decimal(str(x or 0))
+
+    resumen = {"pagos": len(pagos), "sats": 0, "btc": Decimal("0"), "usd": Decimal("0"),
+               "neto": Decimal("0"), "iva": Decimal("0"),
+               "sats_pagado": 0, "usd_pagado": Decimal("0"),
+               "sats_pendiente": 0, "usd_pendiente": Decimal("0"),
+               "estados": {"pendiente": 0, "pagada": 0, "rechazada": 0}}
+    for p in pagos:
+        usd, neto, iva = dec(p["total_usd"]), dec(p["neto_usd"]), dec(p["iva_usd"])
+        sats = p["total_sats"] or 0
+        resumen["sats"] += sats
+        resumen["btc"] += dec(p["total_btc"])
+        resumen["usd"] += usd
+        resumen["neto"] += neto
+        resumen["iva"] += iva
+        resumen["estados"][p["estado"]] = resumen["estados"].get(p["estado"], 0) + 1
+        if p["estado"] == "pagada":
+            resumen["sats_pagado"] += sats
+            resumen["usd_pagado"] += usd
+        elif p["estado"] == "pendiente":
+            resumen["sats_pendiente"] += sats
+            resumen["usd_pendiente"] += usd
+        p["pct_neto"] = float(neto / usd * 100) if usd else 0.0
+        p["pct_iva"] = 100.0 - p["pct_neto"]
+        p["consulta"] = (p["fecha_precio"] or "")[:16].replace("T", " ") or "—"
+    resumen["pct_pagado"] = float(resumen["usd_pagado"] / resumen["usd"] * 100) if resumen["usd"] else 0.0
+    return render_template("bitcoin.html", pagos=pagos, r=resumen, rango=rango,
+                           periodo=RANGOS[rango],
+                           desde=ini.strftime("%d/%m/%Y"),
+                           hasta=(fin - timedelta(days=1)).strftime("%d/%m/%Y"))
+
+
+def _firmar_pendientes(db):
+    """Firma todos los DTEs con paso>=3 que aún no tienen JWS. Silencia errores individuales."""
+    pendientes = db.execute(
+        "SELECT v.id FROM venta v JOIN DTE_State d ON d.id = v.estado_dte_id "
+        "WHERE d.paso >= 3 AND (v.jws IS NULL OR v.jws = '')"
+    ).fetchall()
+    firmados = 0
+    for row in pendientes:
+        try:
+            dte_json = dte_mod.construir_dte(db, row["id"])
+            if dte_json is None:
+                continue
+            resp = firmar_mod.firmar(dte_json, nit=FIRMADOR_NIT, password=FIRMADOR_PASSWORD)
+            jws  = firmar_mod.jws_de_respuesta(resp)
+            db.execute("UPDATE venta SET jws = ? WHERE id = ?", (jws, row["id"]))
+            firmados += 1
+        except Exception:
+            continue
+    if firmados:
+        db.commit()
+    return firmados
+
+
 @app.route("/dte")
 @login_required
 @admin_required
 def dte_lista():
-    ventas = get_db().execute(VENTAS_SQL + " ORDER BY v.id DESC").fetchall()
+    db = get_db()
+    _firmar_pendientes(db)
+    ventas = db.execute(VENTAS_SQL + " ORDER BY v.id DESC").fetchall()
     return render_template("dte_ventas.html", ventas=ventas)
+
+
+@app.route("/ventas/firmar-pendientes", methods=["POST"])
+@login_required
+@admin_required
+def firmar_pendientes():
+    n = _firmar_pendientes(get_db())
+    flash("%d DTE(s) firmado(s) automáticamente." % n if n else "No había DTEs pendientes de firma.")
+    return redirect(url_for("panel"))
 
 
 def _dte_o_404(vid):
@@ -477,7 +574,7 @@ def nueva_venta():
             cur = db.execute(
                 "INSERT INTO venta (fecha_hora, tipo_cliente_id, forma_pago_id, "
                 "empleado_id, estado_dte_id) VALUES (datetime('now','localtime'), ?, ?, ?, "
-                "(SELECT id FROM estado_dte WHERE paso = 1))",
+                "(SELECT id FROM DTE_State WHERE paso = 1))",
                 (tipo_id, pago_id, session["user_id"]),
             )
             db.executemany(
@@ -485,6 +582,8 @@ def nueva_venta():
                 "VALUES (?, ?, ?, ?)",
                 [(cur.lastrowid, pid, cant, precios[pid]) for pid, cant in items.items()],
             )
+            # codigoGeneracion del DTE: nace con la venta (único, UUID en mayúsculas, se guarda una vez)
+            dte_mod.obtener_codigo_generacion(db, cur.lastrowid, tipo["codigo"])
             msg = "Venta #%04d registrada." % cur.lastrowid
             if es_btc:
                 id_pago = bitcoin.registrar_pendiente(
@@ -518,6 +617,54 @@ def nueva_venta():
     )
 
 
+@app.route("/ventas/<int:vid>/firmar", methods=["POST"])
+@login_required
+@admin_required
+def firmar_venta(vid):
+    db = get_db()
+    venta = db.execute(
+        "SELECT ed.paso FROM venta v LEFT JOIN DTE_State ed ON ed.id = v.estado_dte_id WHERE v.id = ?",
+        (vid,)).fetchone()
+    if venta is None:
+        abort(404)
+    if (venta["paso"] or 0) != 2:
+        flash("Solo se pueden firmar DTEs en estado 'DTE Done'.")
+        return redirect(url_for("panel"))
+    dte_json = dte_mod.construir_dte(db, vid)
+    if dte_json is None:
+        flash("No se pudo construir el DTE para la venta #%04d." % vid)
+        return redirect(url_for("panel"))
+    try:
+        resp = firmar_mod.firmar(dte_json, nit=FIRMADOR_NIT, password=FIRMADOR_PASSWORD)
+        jws  = firmar_mod.jws_de_respuesta(resp)
+    except Exception as exc:
+        flash("Error al firmar DTE #%04d: %s" % (vid, exc))
+        return redirect(url_for("panel"))
+    db.execute(
+        "UPDATE venta SET jws = ?, estado_dte_id = (SELECT id FROM DTE_State WHERE paso = 3) WHERE id = ?",
+        (jws, vid))
+    db.commit()
+    flash("DTE #%04d firmado correctamente (JWS generado)." % vid)
+    return redirect(url_for("panel"))
+
+
+@app.route("/dte/<int:vid>/jws")
+@login_required
+@admin_required
+def dte_jws(vid):
+    row = get_db().execute("SELECT jws FROM venta WHERE id = ?", (vid,)).fetchone()
+    if row is None or not row["jws"]:
+        abort(404)
+    codigo = get_db().execute(
+        "SELECT codigo_generacion FROM dte_codigo WHERE venta_id = ? LIMIT 1", (vid,)).fetchone()
+    cg = codigo["codigo_generacion"] if codigo else "%04d" % vid
+    filename = "%s.json" % cg
+    body = json.dumps({"status": "OK", "body": row["jws"], "codigoGeneracion": cg},
+                      ensure_ascii=False, indent=2)
+    return Response(body, mimetype="application/json",
+                    headers={"Content-Disposition": "attachment; filename=%s" % filename})
+
+
 @app.route("/ventas/<int:vid>/avanzar", methods=["POST"])
 @login_required
 @admin_required
@@ -525,10 +672,10 @@ def avanzar_venta(vid):
     db = get_db()
     db.execute(
         """UPDATE venta SET estado_dte_id = (
-               SELECT id FROM estado_dte WHERE paso =
-                 COALESCE((SELECT paso FROM estado_dte WHERE id = venta.estado_dte_id), 0) + 1)
+               SELECT id FROM DTE_State WHERE paso =
+                 COALESCE((SELECT paso FROM DTE_State WHERE id = venta.estado_dte_id), 0) + 1)
            WHERE id = ? AND COALESCE(
-                 (SELECT paso FROM estado_dte WHERE id = venta.estado_dte_id), 0) < 5""",
+                 (SELECT paso FROM DTE_State WHERE id = venta.estado_dte_id), 0) < 5""",
         (vid,),
     )
     db.commit()
