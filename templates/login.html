@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Iniciar sesión{% endblock %}
+{% block title %}Log in{% endblock %}
 {% block content %}
-<h1>Iniciar sesión</h1>
+<h1>Log in</h1>
 <form method="post" action="{{ url_for('login') }}">
-  <label>Usuario <input name="username" required></label>
-  <label>Contraseña <input type="password" name="password" required></label>
-  <button type="submit">Entrar</button>
+  <label>Username <input name="username" required></label>
+  <label>Password <input type="password" name="password" required></label>
+  <button type="submit">Log in</button>
 </form>
-<div class="links">¿No tienes cuenta? <a href="{{ url_for('register') }}">Regístrate</a></div>
+<div class="links">Don't have an account? <a href="{{ url_for('register') }}">Sign up</a></div>
 {% endblock %}

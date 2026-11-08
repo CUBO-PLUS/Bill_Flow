@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>F-14 · Advance Payment · {{ d.mes_nombre }} {{ d.año }}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,sans-serif;background:#f0f4f8;min-height:100vh;padding:2rem 1rem}
+    .page{max-width:900px;margin:0 auto}
+
+    /* ── HEADER ── */
+    .header{background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);color:#fff;border-radius:16px;
+            padding:1.6rem 2rem;display:flex;align-items:center;justify-content:space-between;
+            box-shadow:0 8px 24px #0f766e40;margin-bottom:1.5rem}
+    .header-left{display:flex;align-items:center;gap:1rem}
+    .header-seal{width:56px;height:56px;border-radius:50%;background:#fff2;border:2px solid #fff5;
+                 display:flex;align-items:center;justify-content:center;font-size:1.8rem}
+    .header-title{font-size:1.5rem;font-weight:800;letter-spacing:-.5px}
+    .header-sub{font-size:.85rem;opacity:.85;margin-top:.15rem}
+    .header-right{text-align:right}
+    .header-periodo{font-size:1.1rem;font-weight:700;background:#fff2;border-radius:8px;
+                    padding:.4rem 1rem;border:1px solid #fff3}
+    .header-entidad{font-size:.8rem;opacity:.7;margin-top:.3rem}
+
+    /* ── PERIOD SELECTOR ── */
+    .period-bar{background:#fff;border-radius:12px;padding:1rem 1.5rem;margin-bottom:1.5rem;
+                display:flex;align-items:center;gap:1rem;box-shadow:0 2px 8px #0001;flex-wrap:wrap}
+    .period-bar label{font-weight:600;color:#374151;font-size:.9rem;white-space:nowrap}
+    .period-bar input[type=month]{border:1.5px solid #e5e7eb;border-radius:8px;padding:.4rem .8rem;
+                                   font-size:.95rem;color:#374151;outline:none}
+    .period-bar input[type=month]:focus{border-color:#0f766e}
+    .period-bar button{background:#0f766e;color:#fff;border:0;border-radius:8px;padding:.45rem 1.2rem;
+                       font-weight:600;cursor:pointer;font-size:.9rem}
+    .period-bar button:hover{background:#0d6b65}
+    .csv-btn{text-decoration:none;display:inline-flex;align-items:center;gap:.35rem;
+             background:#16a34a;color:#fff;border-radius:8px;padding:.45rem 1.1rem;
+             font-weight:600;font-size:.9rem;white-space:nowrap}
+    .csv-btn:hover{background:#15803d}
+    .back-link{margin-left:auto;color:#0f766e;text-decoration:none;font-size:.9rem;font-weight:600}
+    .back-link:hover{text-decoration:underline}
+
+    /* ── KPI CARDS ── */
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:1.5rem}
+    .kpi{background:#fff;border-radius:12px;padding:1.1rem 1.3rem;box-shadow:0 2px 8px #0001;
+         border-left:4px solid #0f766e}
+    .kpi.azul{border-left-color:#2563eb}
+    .kpi.morado{border-left-color:#7c3aed}
+    .kpi.rojo{border-left-color:#dc2626}
+    .kpi-label{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;
+               color:#6b7280;margin-bottom:.35rem}
+    .kpi-val{font-size:1.6rem;font-weight:800;color:#111827}
+    .kpi-sub{font-size:.75rem;color:#9ca3af;margin-top:.2rem}
+
+    /* ── SECTIONS ── */
+    .section{background:#fff;border-radius:14px;box-shadow:0 2px 8px #0001;margin-bottom:1.5rem;overflow:hidden}
+    .section-header{padding:1rem 1.5rem;display:flex;align-items:center;gap:.7rem;border-bottom:1px solid #f3f4f6}
+    .section-header.teal{background:linear-gradient(90deg,#ccfbf1,#f0fdfa)}
+    .section-header.blue{background:linear-gradient(90deg,#dbeafe,#eff6ff)}
+    .section-header.gray{background:linear-gradient(90deg,#f3f4f6,#f9fafb)}
+    .section-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;
+                  justify-content:center;font-size:1.1rem;flex:none}
+    .section-icon.teal{background:#0f766e;color:#fff}
+    .section-icon.blue{background:#2563eb;color:#fff}
+    .section-icon.gray{background:#6b7280;color:#fff}
+    .section-title{font-weight:700;font-size:1rem;color:#111827}
+    .section-sub{font-size:.8rem;color:#6b7280;margin-top:.1rem}
+    .section-body{padding:1.2rem 1.5rem}
+
+    /* ── PROGRESS BAR ── */
+    .prog-row{display:flex;align-items:center;gap:1rem;margin-bottom:.8rem}
+    .prog-label{font-size:.85rem;color:#374151;min-width:160px;font-weight:500}
+    .prog-bar{flex:1;height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+    .prog-fill{height:100%;background:#0f766e;border-radius:999px;transition:width .4s}
+    .prog-val{font-size:.85rem;font-weight:700;color:#0f766e;min-width:65px;text-align:right;
+              font-family:monospace}
+
+    /* ── F-14 BOXES ── */
+    .form-grid{display:grid;gap:.8rem}
+    .casilla{display:grid;grid-template-columns:2.5rem 1fr auto;align-items:center;gap:.7rem;
+             padding:.7rem 1rem;border:1.5px solid #e5e7eb;border-radius:10px;background:#fafafa}
+    .casilla:hover{border-color:#99f6e4;background:#f0fdfa}
+    .casilla.highlight{border-color:#0f766e;background:#f0fdfa}
+    .casilla.total{border-color:#0f766e;background:#ccfbf1}
+    .casilla.deuda{border-color:#dc2626;background:#fff1f2}
+    .casilla.info{border-color:#2563eb;background:#eff6ff}
+    .casilla-num{width:2.2rem;height:2.2rem;background:#0f766e;color:#fff;border-radius:6px;
+                 display:flex;align-items:center;justify-content:center;font-weight:800;
+                 font-size:.9rem;flex:none}
+    .casilla.deuda .casilla-num{background:#dc2626}
+    .casilla.info .casilla-num{background:#2563eb}
+    .casilla-label{font-size:.88rem;color:#374151;font-weight:500}
+    .casilla-label small{display:block;color:#9ca3af;font-size:.75rem;margin-top:.1rem}
+    .casilla-val{font-size:1.1rem;font-weight:800;color:#111827;text-align:right;white-space:nowrap;
+                 font-family:monospace}
+    .casilla.total .casilla-val{color:#065f46}
+    .casilla.deuda .casilla-val{color:#991b1b}
+    .casilla.info .casilla-val{color:#1e40af}
+
+    /* ── SALES TABLE ── */
+    .libro-table{width:100%;border-collapse:collapse;font-size:.82rem}
+    .libro-table th{background:#f9fafb;color:#374151;font-weight:700;padding:.55rem .6rem;
+                    border-bottom:2px solid #e5e7eb;text-align:left;white-space:nowrap}
+    .libro-table td{padding:.5rem .6rem;border-bottom:1px solid #f3f4f6;color:#374151}
+    .libro-table tr:last-child td{border-bottom:0}
+    .libro-table tr:hover td{background:#f0fdfa}
+    .libro-table .num{text-align:right;font-variant-numeric:tabular-nums;font-family:monospace}
+    .libro-table .total-row td{font-weight:700;background:#f9fafb;border-top:2px solid #e5e7eb}
+    .empty{text-align:center;color:#9ca3af;padding:1.5rem;font-size:.9rem}
+    .badge-pago{display:inline-block;padding:.15rem .5rem;border-radius:6px;font-size:.72rem;
+                font-weight:600;background:#f3f4f6;color:#374151}
+
+    /* ── NOTE ── */
+    .nota{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:1rem 1.2rem;
+          font-size:.8rem;color:#78350f;margin-bottom:1.5rem;display:flex;gap:.6rem;align-items:flex-start}
+    .nota-icon{font-size:1.1rem;flex:none}
+    .nota-info{background:#eff6ff;border-color:#93c5fd;color:#1e3a8a}
+
+    .divider{height:1px;background:#f3f4f6;margin:.4rem 0}
+
+    @media print{
+      body{background:#fff;padding:0}
+      .period-bar,.back-link,.nota{display:none}
+      .section{box-shadow:none;border:1px solid #ddd}
+    }
+    @media(max-width:600px){
+      .kpi-grid{grid-template-columns:1fr 1fr}
+      .casilla{grid-template-columns:2rem 1fr;grid-template-rows:auto auto}
+      .casilla-val{grid-column:2;text-align:left}
+      .prog-row{flex-wrap:wrap}
+      .prog-label{min-width:100%;margin-bottom:.3rem}
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-seal">🏛️</div>
+      <div>
+        <div class="header-title">Formulario F-14</div>
+        <div class="header-sub">Monthly Advance Payment Return · Ministry of Finance (Hacienda) · El Salvador</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-periodo">{{ d.mes_nombre }} {{ d.año }}</div>
+      <div class="header-entidad">Period {{ d.ini }} to {{ d.fin }}</div>
+    </div>
+  </div>
+
+  <!-- PERIOD SELECTOR -->
+  <form class="period-bar" method="get" action="">
+    <label for="periodo">📅 Tax period:</label>
+    <input type="month" id="periodo" name="periodo" value="{{ d.periodo }}">
+    <button type="submit">Update</button>
+    <a class="csv-btn" href="{{ url_for('f14_csv', periodo=d.periodo) }}">⬇ Download_CSV</a>
+    <a class="back-link" href="{{ url_for('panel') }}">← Back to dashboard</a>
+  </form>
+
+  <!-- NOTES -->
+  <div class="nota nota-info">
+    <span class="nota-icon">ℹ️</span>
+    <span>The advance payment is calculated by applying <strong>1.75%</strong> to the gross income of the period (Art. 151 of the El Salvador Tax Code, applicable to individuals). For corporations the rate is 2%. Income tax withholdings and tax withheld by third parties must be entered manually on the Hacienda portal.</span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">Gross income for the month</div>
+      <div class="kpi-val">${{ "%.2f"|format(d.total_ventas|float) }}</div>
+      <div class="kpi-sub">{{ (d.cf|length) + (d.ccf|length) + (d.expo|length) }} total sales</div>
+    </div>
+    <div class="kpi azul">
+      <div class="kpi-label">Invoices (CF)</div>
+      <div class="kpi-val">${{ "%.2f"|format(d.total_cf|float) }}</div>
+      <div class="kpi-sub">{{ d.cf|length }} transactions</div>
+    </div>
+    <div class="kpi morado">
+      <div class="kpi-label">CCF (taxpayers)</div>
+      <div class="kpi-val">${{ "%.2f"|format(d.total_ccf|float) }}</div>
+      <div class="kpi-sub">{{ d.ccf|length }} transactions</div>
+    </div>
+    <div class="kpi rojo">
+      <div class="kpi-label">Advance payment (1.75%)</div>
+      <div class="kpi-val">${{ "%.2f"|format(d.pago_cuenta|float) }}</div>
+      <div class="kpi-sub">To be declared on F-14</div>
+    </div>
+  </div>
+
+  <!-- F-14 BASE — BOXES -->
+  <div class="section">
+    <div class="section-header teal">
+      <div class="section-icon teal">🧮</div>
+      <div>
+        <div class="section-title">F-14 Base — Advance Payment and Withheld Tax</div>
+        <div class="section-sub">Period {{ d.mes_nombre }} {{ d.año }}</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="form-grid">
+
+        <div class="casilla">
+          <div class="casilla-num">1</div>
+          <div class="casilla-label">
+            Income from sales to final consumers
+            <small>Invoices issued (type 01) in the period</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.total_cf|float) }}</div>
+        </div>
+
+        <div class="casilla">
+          <div class="casilla-num">2</div>
+          <div class="casilla-label">
+            Income from sales to taxpayers (CCF)
+            <small>Tax Credit Vouchers (type 03)</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.total_ccf|float) }}</div>
+        </div>
+
+        {% if d.total_expo > 0 %}
+        <div class="casilla">
+          <div class="casilla-num">3</div>
+          <div class="casilla-label">
+            Income from exports
+            <small>Export invoices (type 11)</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.total_expo|float) }}</div>
+        </div>
+        {% endif %}
+
+        <div class="casilla highlight">
+          <div class="casilla-num">4</div>
+          <div class="casilla-label">
+            Total gross income for the period
+            <small>Sum of all income for the month</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.total_ventas|float) }}</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="casilla">
+          <div class="casilla-num">5</div>
+          <div class="casilla-label">
+            Applicable advance payment rate
+            <small>Individual: 1.75% · Corporation: 2%</small>
+          </div>
+          <div class="casilla-val">1.75%</div>
+        </div>
+
+        <div class="casilla total">
+          <div class="casilla-num">6</div>
+          <div class="casilla-label">
+            Advance payment for the month
+            <small>Box 4 × 1.75%</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.pago_cuenta|float) }}</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="casilla info">
+          <div class="casilla-num">7</div>
+          <div class="casilla-label">
+            Income tax withholdings received from third parties
+            <small>Enter manually with Hacienda</small>
+          </div>
+          <div class="casilla-val" style="color:#9ca3af">— enter —</div>
+        </div>
+
+        <div class="casilla info">
+          <div class="casilla-num">8</div>
+          <div class="casilla-label">
+            VAT perceptions received
+            <small>If applicable to the line of business</small>
+          </div>
+          <div class="casilla-val" style="color:#9ca3af">— enter —</div>
+        </div>
+
+        <div class="casilla total">
+          <div class="casilla-num">9</div>
+          <div class="casilla-label">
+            Total payable on F-14
+            <small>Box 6 − Withholdings − Perceptions</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.pago_cuenta|float) }} *</div>
+        </div>
+
+      </div>
+      <p style="font-size:.75rem;color:#9ca3af;margin-top:1rem">
+        * Before deducting withholdings or perceptions (enter them manually on the Hacienda return).
+      </p>
+    </div>
+  </div>
+
+  <!-- BREAKDOWN BY SALE TYPE -->
+  <div class="section">
+    <div class="section-header teal">
+      <div class="section-icon teal">📈</div>
+      <div>
+        <div class="section-title">Composition of the month's income</div>
+      </div>
+    </div>
+    <div class="section-body">
+      {% set total = d.total_ventas|float %}
+      {% if total > 0 %}
+      <div class="prog-row">
+        <div class="prog-label">Invoices (final consumer)</div>
+        <div class="prog-bar"><div class="prog-fill" style="width:{{ (d.total_cf|float / total * 100)|round(1) }}%;background:#2563eb"></div></div>
+        <div class="prog-val" style="color:#2563eb">${{ "%.2f"|format(d.total_cf|float) }}</div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-label">CCF (taxpayers)</div>
+        <div class="prog-bar"><div class="prog-fill" style="width:{{ (d.total_ccf|float / total * 100)|round(1) }}%;background:#7c3aed"></div></div>
+        <div class="prog-val" style="color:#7c3aed">${{ "%.2f"|format(d.total_ccf|float) }}</div>
+      </div>
+      {% if d.total_expo > 0 %}
+      <div class="prog-row">
+        <div class="prog-label">Exports</div>
+        <div class="prog-bar"><div class="prog-fill" style="width:{{ (d.total_expo|float / total * 100)|round(1) }}%;background:#d97706"></div></div>
+        <div class="prog-val" style="color:#d97706">${{ "%.2f"|format(d.total_expo|float) }}</div>
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="empty">No sales recorded in this period.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- SUMMARY OF ALL SALES -->
+  <div class="section">
+    <div class="section-header blue">
+      <div class="section-icon blue">📋</div>
+      <div>
+        <div class="section-title">Sales ledger summary for the period</div>
+        <div class="section-sub">Basis of the F-14 calculation</div>
+      </div>
+    </div>
+    <div class="section-body">
+      {% set todas = d.cf + d.ccf + d.expo %}
+      {% if todas %}
+      <table class="libro-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Document</th>
+            <th>Payment method</th>
+            <th class="num">Total</th>
+            <th class="num">Adv. payment (1.75%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in (todas|sort(attribute='fecha_hora')) %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ (v.fecha_hora or '')[:10] }}</td>
+            <td>{{ v.documento }}</td>
+            <td><span class="badge-pago">{{ v.pago }}</span></td>
+            <td class="num">${{ "%.2f"|format(v.total_d|float) }}</td>
+            <td class="num" style="color:#0f766e">${{ "%.4f"|format(v.total_d|float * 0.0175) }}</td>
+          </tr>
+          {% endfor %}
+          <tr class="total-row">
+            <td colspan="4">PERIOD TOTALS</td>
+            <td class="num">${{ "%.2f"|format(d.total_ventas|float) }}</td>
+            <td class="num" style="color:#0f766e;font-weight:800">${{ "%.2f"|format(d.pago_cuenta|float) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty">No sales recorded in this period.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="text-align:center;color:#9ca3af;font-size:.75rem;margin-top:1rem;margin-bottom:2rem">
+    Automatically generated from the ticket ledger · {{ d.ini }} to {{ d.fin }}
+    &nbsp;·&nbsp; <a href="#" onclick="window.print();return false" style="color:#0f766e">Print / Save PDF</a>
+    &nbsp;·&nbsp; <a href="{{ url_for('f07', periodo=d.periodo) }}" style="color:#7c3aed">View F-07 for the same period</a>
+  </div>
+
+</div>
+</body>
+</html>

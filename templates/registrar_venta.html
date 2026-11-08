@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Bill Flow</title>
 <style>
-/* Layout: sidebar + formulario a la izquierda + resumen a la derecha. Wireframe en escala de grises. */
+/* Layout: sidebar + form on the left + summary on the right. Grayscale wireframe. */
 :root {
   --bg: #fafaf8;
   --surface: #ffffff;
@@ -52,7 +52,7 @@ h1 { margin: 0.25rem 0 2px; font-size: 1.5rem; text-wrap: balance; }
 .grid > aside { width: 100%; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 0.5rem; padding: 1.125rem; min-width: 0; }
 
-/* Campos */
+/* Fields */
 .row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem; }
 .field { flex: 1 1 10rem; min-width: 0; }
 .label { display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--fg); margin-bottom: 0.375rem; }
@@ -77,10 +77,11 @@ h1 { margin: 0.25rem 0 2px; font-size: 1.5rem; text-wrap: balance; }
 .freq-title { font-size: 0.6875rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin: 0.375rem 0 0.5rem; }
 .freq { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.75rem, 1fr)); gap: 0.5rem; }
 .freq button { text-align: center; border: 1px solid var(--line); background: var(--surface); border-radius: 0.375rem; padding: 0.625rem 0.5rem; cursor: pointer; }
+.freq button img { display: block; width: 2.5rem; height: 2.5rem; object-fit: contain; margin: 0 auto 0.25rem; }
 .freq button b { display: block; font-size: 0.8125rem; }
 .freq button span { color: var(--muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 
-/* Resumen */
+/* Summary */
 .sum-title { font-size: 0.6875rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin: 0 0 0.625rem; }
 .line { display: flex; justify-content: space-between; gap: 0.625rem; padding: 0.5rem 0; border-bottom: 1px solid var(--line); }
 .line:last-of-type { border-bottom: 0; }
@@ -134,43 +135,43 @@ dialog .search:disabled { background: #e4e4e0; color: #9a9a94; cursor: not-allow
 <div class="app">
   <aside class="side">
     <div class="brand">Bill Flow</div>
-    <button class="nav active" type="button">+ Registrar venta</button>
-    {% if session['es_admin'] %}<a class="nav" href="{{ url_for('panel') }}">Panel del administrador</a>{% endif %}
-    <a class="nav" href="{{ url_for('logout') }}">Cerrar sesión</a>
+    <button class="nav active" type="button">+ Record sale</button>
+    {% if session['es_admin'] %}<a class="nav" href="{{ url_for('panel') }}">Administrator dashboard</a>{% endif %}
+    <a class="nav" href="{{ url_for('logout') }}">Log out</a>
     <div class="side-foot">
-      Rol: <b>{{ session['rol'] }}</b><br>
-      Usuario: <span>{{ session['username'] }}</span>
+      Role: <b>{{ session['rol'] }}</b><br>
+      User: <span>{{ session['username'] }}</span>
     </div>
   </aside>
 
   <main>
-    <p class="eyebrow">Pantalla 1 · Caja</p>
-    <h1>Registrar venta</h1>
-    <p class="sub">Lo que la cajera llena por cada venta. Meta: menos de 1 minuto.</p>
+    <p class="eyebrow">Screen 1 · Cashier</p>
+    <h1>Record sale</h1>
+    <p class="sub">What the cashier fills in for each sale. Goal: under 1 minute.</p>
 
     {% for m in get_flashed_messages() %}
-      <div class="flash {% if not m.startswith('Venta') %}err{% endif %}">{{ m }}</div>
+      <div class="flash {% if not m.startswith('Sale') %}err{% endif %}">{{ m }}</div>
     {% endfor %}
 
     <form method="post" action="{{ url_for('nueva_venta') }}" id="form">
     <div class="grid">
-      <section class="card" aria-label="Formulario de venta">
+      <section class="card" aria-label="Sale form">
 
         <div class="row">
           <div class="field">
-            <div class="label">Fecha y hora <small>(automático)</small></div>
+            <div class="label">Date and time <small>(automatic)</small></div>
             <div class="box">{{ ahora }}</div>
           </div>
           <div class="field">
-            <div class="label">Cajera <small>(automático)</small></div>
+            <div class="label">Cashier <small>(automatic)</small></div>
             <div class="box">{{ session['username'] }}</div>
           </div>
         </div>
 
         <div class="field" style="margin-bottom:16px">
-          <div class="label"><span class="num">1</span> Plato <small>(categorías del menú)</small></div>
-          <input class="search" type="search" id="buscar" placeholder="🔍 Buscar plato… (ej. &quot;chorizo&quot;)" aria-label="Buscar plato">
-          <div class="tabs" id="cats" role="group" aria-label="Categorías">
+          <div class="label"><span class="num">1</span> Dish <small>(menu categories)</small></div>
+          <input class="search" type="search" id="buscar" placeholder="🔍 Search dish… (e.g. &quot;chorizo&quot;)" aria-label="Search dish">
+          <div class="tabs" id="cats" role="group" aria-label="Categories">
             {% for c in categorias %}
             <button type="button" class="chip" data-cat="{{ c['id'] }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ c['nombre'] }}</button>
             {% endfor %}
@@ -180,25 +181,25 @@ dialog .search:disabled { background: #e4e4e0; color: #9a9a94; cursor: not-allow
 
         <div class="row">
           <div class="field">
-            <div class="label">Precio unitario <small>(auto, desde)</small></div>
+            <div class="label">Unit price <small>(auto, from)</small></div>
             <div class="box money" id="precio">—</div>
           </div>
           <div class="field">
-            <div class="label"><span class="num">2</span> Cantidad</div>
+            <div class="label"><span class="num">2</span> Quantity</div>
             <div class="stepper">
-              <button type="button" id="menos" aria-label="Menos">−</button>
+              <button type="button" id="menos" aria-label="Less">−</button>
               <span id="cant">1</span>
-              <button type="button" id="mas" aria-label="Más">+</button>
+              <button type="button" id="mas" aria-label="More">+</button>
             </div>
           </div>
           <div class="field" style="align-self:flex-end">
-            <button type="button" class="addbtn" id="agregar" disabled>+ Agregar a la orden</button>
+            <button type="button" class="addbtn" id="agregar" disabled>+ Add to order</button>
           </div>
         </div>
 
         <div class="field" style="margin-bottom:16px">
-          <div class="label"><span class="num">3</span> Tipo de documento <small>(tipo_cliente)</small></div>
-          <div class="chip-group" role="group" aria-label="Tipo de documento">
+          <div class="label"><span class="num">3</span> Document type</div>
+          <div class="chip-group" role="group" aria-label="Document type">
             {% for t in tipos %}
             <label class="chip" style="cursor:pointer">
               <input type="radio" name="tipo_cliente_id" value="{{ t['id'] }}" data-codigo="{{ t['codigo'] }}" {{ 'checked' if loop.first }} hidden>
@@ -209,34 +210,42 @@ dialog .search:disabled { background: #e4e4e0; color: #9a9a94; cursor: not-allow
         </div>
 
         <div class="field" style="margin-bottom:16px">
-          <div class="label"><span class="num">4</span> Método de pago <small>(forma_pago)</small></div>
-          <div class="chip-group" role="group" aria-label="Método de pago">
+          <div class="label"><span class="num">4</span> Payment method</div>
+          <div class="chip-group" role="group" aria-label="Payment method">
             {% for p in pagos %}
             <label class="chip" style="cursor:pointer">
-              <input type="radio" name="forma_pago_id" value="{{ p['id'] }}" {{ 'checked' if loop.first }} hidden>
+              <input type="radio" name="forma_pago_id" value="{{ p['id'] }}" data-nombre="{{ p['nombre'] }}" {{ 'checked' if loop.first }} hidden>
               {{ p['nombre'] }}
             </label>
             {% endfor %}
           </div>
         </div>
 
-        <div class="freq-title">Platos frecuentes <span class="muted-tag">(un toque lo agrega a la orden)</span></div>
+        <div class="freq-title">Best Sellers <span class="muted-tag">(one tap adds it to the order)</span></div>
         <div class="freq" id="freq"></div>
       </section>
 
       <aside>
-        <section class="card" aria-label="Resumen de la orden">
-          <div class="sum-title">Resumen de la orden</div>
+        <section class="card" aria-label="Order summary">
+          <div class="sum-title">Order summary</div>
           <div id="lineas"></div>
           <div class="total"><span>TOTAL</span><span class="money" id="total">$0.00</span></div>
           <div class="fiscal" id="fiscal" hidden>
-            <b>Datos fiscales del cliente</b>
+            <b>Customer tax details</b>
             <div id="r-dui-row">DUI: <span id="r-dui"></span></div>
             <div id="r-nit-row">NIT: <span id="r-nit"></span></div>
             <div>NRC: <span id="r-nrc"></span></div>
-            <div>Nombre: <span id="r-nombre"></span></div>
-            <div>Dirección: <span id="r-dir"></span></div>
-            <button type="button" class="add" id="editar-fiscal">Editar</button>
+            <div>Name: <span id="r-nombre"></span></div>
+            <div>Address: <span id="r-dir"></span></div>
+            <button type="button" class="add" id="editar-fiscal">Edit</button>
+          </div>
+          <div id="ln-qr" hidden style="text-align:center;margin:12px 0">
+            <b>Pay with Bitcoin Lightning ⚡</b>
+            <img src="{{ url_for('static', filename='lightning-qr.png') }}" alt="QR Bitcoin Lightning" style="width:100%;max-width:none;display:block;margin:8px auto;background:#fff">
+            <small>Scan the QR code with your Lightning wallet</small>
+            <label style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;font-weight:600;cursor:pointer">
+              <input type="checkbox" id="ln-pagado" style="width:18px;height:18px;cursor:pointer"> Payment successful
+            </label>
           </div>
           <input type="hidden" name="items" id="items">
           <input type="hidden" name="cf_dui" id="h-dui">
@@ -244,8 +253,8 @@ dialog .search:disabled { background: #e4e4e0; color: #9a9a94; cursor: not-allow
           <input type="hidden" name="cf_nrc" id="h-nrc">
           <input type="hidden" name="cf_nombre" id="h-nombre">
           <input type="hidden" name="cf_direccion" id="h-dir">
-          <button class="submit" type="submit" id="registrar" disabled>✓ Registrar venta</button>
-          <div class="dte">Al registrar, el estado DTE queda en <b>1 · BILL</b> (Recibos emitidos).</div>
+          <button class="submit" type="submit" id="registrar" disabled>✓ Record sale</button>
+          <div class="dte">When recorded, the DTE status is set to <b>1 · BILL</b> (Receipts issued).</div>
         </section>
       </aside>
     </div>
@@ -253,16 +262,16 @@ dialog .search:disabled { background: #e4e4e0; color: #9a9a94; cursor: not-allow
 
     <dialog id="dlg-fiscal">
       <form method="dialog" id="form-fiscal" autocomplete="off">
-        <h2>Datos del cliente · Crédito Fiscal</h2>
-        <div class="field"><div class="label">DUI <small>(si lo pones, el NIT no es necesario)</small></div><input class="search" id="f-dui" placeholder="00000000-0" inputmode="numeric"></div>
+        <h2>Customer details · Tax Credit</h2>
+        <div class="field"><div class="label">DUI <small>(if provided, the NIT is not required)</small></div><input class="search" id="f-dui" placeholder="00000000-0" inputmode="numeric"></div>
         <div class="field"><div class="label">NIT</div><input class="search" id="f-nit" placeholder="0000-000000-000-0" inputmode="numeric"></div>
         <div class="field"><div class="label">NRC</div><input class="search" id="f-nrc" placeholder="000000-0" inputmode="numeric"></div>
-        <div class="field"><div class="label">Nombre</div><input class="search" id="f-nombre"></div>
-        <div class="field"><div class="label">Dirección</div><input class="search" id="f-dir"></div>
+        <div class="field"><div class="label">Name</div><input class="search" id="f-nombre"></div>
+        <div class="field"><div class="label">Address</div><input class="search" id="f-dir"></div>
         <div class="dlg-err" id="f-err"></div>
         <div class="dlg-actions">
-          <button type="button" class="addbtn" id="f-cancelar">Cancelar</button>
-          <button type="submit" class="addbtn" id="f-agregar" disabled>Agregar</button>
+          <button type="button" class="addbtn" id="f-cancelar">Cancel</button>
+          <button type="submit" class="addbtn" id="f-agregar" disabled>Add</button>
         </div>
       </form>
     </dialog>
@@ -298,7 +307,7 @@ function pintarPlatos() {
     b.onclick = function () { seleccion = p.id; cantidad = 1; pintarSeleccion(); pintarPlatos(); };
     cont.appendChild(b);
   });
-  if (!lista.length) cont.innerHTML = '<div class="empty">Sin resultados.</div>';
+  if (!lista.length) cont.innerHTML = '<div class="empty">No results.</div>';
 }
 
 function pintarSeleccion() {
@@ -319,16 +328,18 @@ function pintarOrden() {
     d.firstChild.textContent = orden[id] + ' × ' + p.nombre;
     d.lastChild.textContent = money(sub) + ' ';
     var x = document.createElement('button');
-    x.type = 'button'; x.className = 'rm'; x.textContent = '✕'; x.title = 'Quitar';
+    x.type = 'button'; x.className = 'rm'; x.textContent = '✕'; x.title = 'Remove';
     x.onclick = function () { delete orden[id]; pintarOrden(); };
     d.lastChild.appendChild(x);
     cont.appendChild(d);
   });
-  if (!ids.length) cont.innerHTML = '<div class="empty">Aún no hay platos en la orden.</div>';
+  if (!ids.length) cont.innerHTML = '<div class="empty">There are no dishes in the order yet.</div>';
   $('total').textContent = money(total);
-  $('registrar').disabled = !ids.length || (esCCF() && !fiscal);
+  $('registrar').disabled = !ids.length || (esCCF() && !fiscal) || (esLN() && !$('ln-pagado').checked);
   $('items').value = ids.map(function (id) { return id + ':' + orden[id]; }).join(',');
 }
+
+function esLN() { var p = document.querySelector('input[name=forma_pago_id]:checked'); return !!(p && p.dataset.nombre === 'Bitcoin Lightning'); }
 
 function agregar(id, n) { orden[id] = (orden[id] || 0) + n; pintarOrden(); }
 
@@ -355,20 +366,31 @@ FRECUENTES.forEach(function (id) {
   var b = document.createElement('button');
   b.type = 'button'; b.innerHTML = '<b></b><span></span>';
   b.firstChild.textContent = p.nombre; b.lastChild.textContent = money(p.precio_desde);
+  if (p.nombre === 'Pear') {
+    var img = document.createElement('img');
+    img.src = "{{ url_for('static', filename='pear.png') }}"; img.alt = '';
+    b.insertBefore(img, b.firstChild);
+  }
   b.onclick = function () { agregar(id, 1); };
   $('freq').appendChild(b);
 });
 
-// Chips de opción única (radio): marcar el seleccionado
+// Single-choice chips (radio): mark the selected one
 function marcarRadios() {
   document.querySelectorAll('.chip-group .chip').forEach(function (c) {
     var r = c.querySelector('input');
     c.setAttribute('aria-pressed', r && r.checked ? 'true' : 'false');
   });
+  var p = document.querySelector('input[name=forma_pago_id]:checked');
+  $('ln-qr').hidden = !esLN();
+  if (!esLN()) $('ln-pagado').checked = false;
+  pintarOrden();
 }
+$('ln-pagado').onchange = pintarOrden;
 document.querySelectorAll('.chip-group input').forEach(function (r) { r.onchange = marcarRadios; });
+marcarRadios();
 
-// ---- Datos fiscales (Comprobante de Crédito Fiscal · 03) ----
+// ---- Tax details (Tax Credit Voucher · 03) ----
 var fiscal = null, tipoPrevio = null;
 var dlg = $('dlg-fiscal');
 var campos = { dui: $('f-dui'), nit: $('f-nit'), nrc: $('f-nrc'), nombre: $('f-nombre'), dir: $('f-dir') };
@@ -379,14 +401,14 @@ function soloDigitos(v) { return v.replace(/[\s-]/g, ''); }
 function validarFiscal() {
   var dui = soloDigitos(campos.dui.value), nit = soloDigitos(campos.nit.value), nrc = soloDigitos(campos.nrc.value);
   var usaDui = dui !== '';
-  campos.nit.disabled = usaDui;   // con DUI el NIT se engrisa
+  campos.nit.disabled = usaDui;   // with a DUI the NIT is greyed out
   if (usaDui) campos.nit.value = '';
   var okDui = /^\d{9}$/.test(dui), okNit = usaDui || /^\d{14}$/.test(nit), okNrc = /^\d{1,8}$/.test(nrc);
   var ok = (usaDui ? okDui : okNit) && okNrc && campos.nombre.value.trim() && campos.dir.value.trim();
   $('f-agregar').disabled = !ok;
-  $('f-err').textContent = (usaDui && !okDui) ? 'El DUI debe tener 9 dígitos.' :
-                           (!usaDui && campos.nit.value && !okNit) ? 'El NIT debe tener 14 dígitos.' :
-                           (campos.nrc.value && !okNrc) ? 'El NRC debe tener solo dígitos (máx. 8).' : '';
+  $('f-err').textContent = (usaDui && !okDui) ? 'The DUI must have 9 digits.' :
+                           (!usaDui && campos.nit.value && !okNit) ? 'The NIT must have 14 digits.' :
+                           (campos.nrc.value && !okNrc) ? 'The NRC must contain digits only (max. 8).' : '';
 }
 Object.keys(campos).forEach(function (k) { campos[k].oninput = validarFiscal; });
 

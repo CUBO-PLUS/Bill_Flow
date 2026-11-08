@@ -37,23 +37,23 @@
   @keyframes flash { 0% { background: #bbf7d0; } 100% { background: transparent; } }
 </style>
 <div class="topbar">
-  <h1>Data · base de datos real</h1>
-  <a class="btn back" href="{{ url_for('panel') }}">← Panel</a>
+  <h1>Data · live database</h1>
+  <a class="btn back" href="{{ url_for('panel') }}">← Dashboard</a>
 </div>
-<p class="muted"><span id="resumen">Cargando…</span> · se actualiza solo cada 4 s · clic en una tabla para ver todas sus filas.
-  {% if lucid_url %}<a class="btn lucid" href="{{ lucid_url }}" target="_blank">Abrir en Lucid</a>
-  {% else %}Lucid: usa la skill <i>actualizar-lucid-erd</i>.{% endif %}</p>
+<p class="muted"><span id="resumen">Loading…</span> · refreshes automatically every 4 s · click a table to see all its rows.
+  {% if lucid_url %}<a class="btn lucid" href="{{ lucid_url }}" target="_blank">Open in Lucid</a>
+  {% else %}Lucid: use the <i>actualizar-lucid-erd</i> skill.{% endif %}</p>
 <div class="scroll"><div id="canvas"><svg id="lines"></svg></div></div>
 
 <script>
 const NOMBRES_CLIENTES = ['Mateo Rodríguez','Valentina Morales','Santiago Herrera','Camila Fernández','Gabriel Mendoza','Lucía Castillo','Nicolás Vargas','Isabella Ramírez','Sebastián Aguilar','Mariana Fuentes','Emiliano Torres','Daniela Rivas','Alejandro Paredes','Sofía Cabrera','Leonardo Guzmán','Gabriela Navarro','Adrián Velásquez','Natalia Escobar','Joaquín Salazar','Renata Villalobos','Diego Montoya','Antonella Méndez','Rafael Cárdenas','Julieta Peralta','Mauricio Lozano','Abril Quintanilla','Bruno Zamora','Elena Figueroa','Tomás Benítez','Carolina Santamaría'];
-// Solo visual: NO se guarda en la base de datos. Estable por id de venta (siempre el mismo nombre por fila).
+// Visual only: NOT saved in the database. Stable per sale id (always the same name for a given row).
 function nombreVisual(id) {
   const n = Number(id);
   return NOMBRES_CLIENTES[(Number.isFinite(n) ? n * 7 : 0) % NOMBRES_CLIENTES.length];
 }
 
-const POS = {  // [columna, fila] como el diagrama de referencia
+const POS = {  // [column, row] like the reference diagram
   rol: [0,0], empleado: [1,0], venta_bitcoin: [2,0], DTE_State: [3,0],
   forma_pago: [0,1], venta: [1,1], tipo_cliente: [2,1], detalle_venta: [3,1],
   categoria_menu: [0,2], platillo: [1,2]
@@ -77,7 +77,7 @@ function render() {
     const box = el('div', 'ent' + (abierta ? ' open' : '')); box.id = 'ent-' + e.name;
     box.style.left = (PAD + p[0] * COLW) + 'px'; box.style.top = (PAD + p[1] * ROWH) + 'px';
     const h = el('h3', null, e.name); h.appendChild(el('span', 'n', e.rows));
-    if (abierta) { const b = el('button', null, '−'); b.title = 'Hacer pequeña';
+    if (abierta) { const b = el('button', null, '−'); b.title = 'Make smaller';
       b.onclick = ev => { ev.stopPropagation(); abiertas.delete(e.name); guardar(); render(); }; h.prepend(b); }
     box.appendChild(h);
     const t = el('table', 'cols');
@@ -88,7 +88,7 @@ function render() {
       t.appendChild(tr);
     });
     box.appendChild(t);
-    box.appendChild(el('div', 'hint', 'clic para ver ' + e.rows + ' filas'));
+    box.appendChild(el('div', 'hint', 'click to see ' + e.rows + ' rows'));
     const rows = el('div', 'rows'), rt = el('table');
     const hr = el('tr'); e.columns.forEach(c => hr.appendChild(el('th', null, c))); rt.appendChild(hr);
     const prev = vistas[e.name]; nuevas[e.name] = new Set();
@@ -122,12 +122,12 @@ function lineas() {
   };
   datos.relaciones.forEach((rel, i) => {
     const a = pt(rel.from, rel.fromAttribute), b = pt(rel.to, rel.toAttribute); if (!a || !b) return;
-    let x1, x2, d1, d2, xm;  // d = dirección en la que sale la línea de cada extremo
+    let x1, x2, d1, d2, xm;  // d = direction in which the line leaves each end
     if (a.r + 20 <= b.l) { x1 = a.r; d1 = 1; x2 = b.l; d2 = -1; xm = (x1 + x2) / 2 + (i % 3 - 1) * 8; }
     else if (b.r + 20 <= a.l) { x1 = a.l; d1 = -1; x2 = b.r; d2 = 1; xm = (x1 + x2) / 2 + (i % 3 - 1) * 8; }
     else { x1 = a.r; d1 = 1; x2 = b.r; d2 = 1; xm = Math.max(a.r, b.r) + 18 + (i % 4) * 7; }
     out += '<path d="M' + x1 + ' ' + a.y + 'H' + xm + 'V' + b.y + 'H' + x2 + '" fill="none" stroke="#0f172a" stroke-width="1.4"/>';
-    // pata de gallo (lado FK, "muchos") y barra (lado PK, "uno")
+    // crow's foot (FK side, "many") and bar (PK side, "one")
     const g = 10;
     if (rel.fromCardinality === 'exactlyOne') out += '<path d="M' + (x1 + d1 * g) + ' ' + (a.y - 6) + 'V' + (a.y + 6) + '" stroke="#0f172a" stroke-width="1.6"/>';
     else out += '<path d="M' + (x1 + d1 * g) + ' ' + a.y + 'L' + x1 + ' ' + (a.y - 6) + 'M' + (x1 + d1 * g) + ' ' + a.y + 'L' + x1 + ' ' + (a.y + 6) + '" stroke="#0f172a" stroke-width="1.4" fill="none"/>';
@@ -143,10 +143,10 @@ async function cargar() {
     if (r.status !== 200 || r.redirected) { location.href = '{{ url_for("panel") }}'; return; }
     const txt = await r.text(); if (txt === ultimo) return; ultimo = txt;
     datos = JSON.parse(txt);
-    document.getElementById('resumen').textContent = datos.entidades.length + ' tablas · ' + datos.relaciones.length +
-      ' llaves foráneas · ' + datos.entidades.reduce((s, e) => s + e.rows, 0) + ' filas';
+    document.getElementById('resumen').textContent = datos.entidades.length + ' tables · ' + datos.relaciones.length +
+      ' foreign keys · ' + datos.entidades.reduce((s, e) => s + e.rows, 0) + ' rows';
     render();
-  } catch (e) { /* reintenta en el próximo ciclo */ }
+  } catch (e) { /* retries on the next cycle */ }
 }
 cargar(); setInterval(cargar, 4000); addEventListener('resize', () => datos && lineas());
 </script>

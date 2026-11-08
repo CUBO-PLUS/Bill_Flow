@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Restaurante{% endblock %}</title>
+  <title>{% block title %}Restaurant{% endblock %}</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: system-ui, sans-serif; background: #f2f4f7; margin: 0;
@@ -11,7 +11,7 @@
     .card { background: #fff; padding: 28px; border-radius: 12px; width: 100%;
             max-width: 420px; box-shadow: 0 4px 16px rgba(0,0,0,.08); height: fit-content; }
     .card.wide { max-width: 72rem; padding: 2rem; border-radius: 1rem; }
-    /* Panel grande: todo escala con el ancho de la ventana */
+    /* Large panel: everything scales with the window width */
     html:has(.card.wide) { font-size: clamp(16px, 1.15vw, 34px); }
     html:has(.card.wide) body { padding: 2rem 1rem; }
     .card.wide table { font-size: 1rem; }
@@ -62,7 +62,7 @@
   <div class="card {% block cardclass %}{% endblock %}">
     {% with mensajes = get_flashed_messages() %}
       {% for m in mensajes %}
-        <div class="flash {% if m.startswith('Usuario creado') or m.startswith('Venta') %}ok{% endif %}">{{ m }}</div>
+        <div class="flash {% if m.startswith('User created') or m.startswith('Sale') %}ok{% endif %}">{{ m }}</div>
       {% endfor %}
     {% endwith %}
     {% block content %}{% endblock %}

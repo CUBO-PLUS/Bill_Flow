@@ -295,19 +295,19 @@ class TestConfirmacion(unittest.TestCase):
         self.assertTrue(bitcoin.confirmar(self.db, p, get=self.get)[0])
         ok, msg = bitcoin.confirmar(self.db, p, get=self.get)
         self.assertFalse(ok)
-        self.assertIn("ya está", msg)
+        self.assertIn("already", msg)
         self.assertEqual(self.db.execute("SELECT COUNT(*) FROM cotizacion_btc WHERE tipo='confirmacion'").fetchone()[0], 1)
 
     def test_monto_insuficiente(self):
         ok, msg = bitcoin.confirmar(self.db, pago_json(self.db, self.id_pago, monto_sats=14000), get=self.get)
         self.assertFalse(ok)
-        self.assertIn("insuficiente", msg)
+        self.assertIn("insufficient", msg)
         self.assertEqual(self.estado(), "pendiente")
 
     def test_monto_excesivo(self):
         ok, msg = bitcoin.confirmar(self.db, pago_json(self.db, self.id_pago, monto_sats=16000, monto_usd=13), get=self.get)
         self.assertFalse(ok)
-        self.assertIn("excesivo", msg)
+        self.assertIn("excessive", msg)
         self.assertEqual(self.estado(), "pendiente")
 
     def test_usd_no_coincide(self):

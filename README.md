@@ -1,12 +1,12 @@
-# Demo: restaurante, ventas y DTE (Flask + SQLite)
+# Demo: restaurant, sales and DTE (Flask + SQLite)
 
-Usa el esquema de `restaurante_db.sql` (platillos, ventas, detalle, tipo de documento, forma de pago, estado del DTE, roles y empleados).
+Uses the schema in `restaurante_db.sql` (dishes, sales, line items, document type, payment method, DTE status, roles and employees).
 
-- **Registro**: usuario y contraseña (se guardan en la tabla `empleado`). Se elige el rol: *Asistente de caja* o *Administrador*.
-- **Asistente de caja**: registra ventas (platillo, cantidad, tipo de documento, forma de pago) y ve solo las suyas.
-- **Administrador**: ve empleados y todas las ventas, y avanza el estado del DTE (paso 1 a 5).
+- **Sign-up**: username and password (stored in the `empleado` table). Choose the role: *Cashier Assistant* or *Administrator*.
+- **Cashier Assistant**: records sales (dish, quantity, document type, payment method) and only sees their own.
+- **Administrator**: sees employees and all sales, and advances the DTE status (step 1 to 5).
 
-## Instalación (en la terminal de VS Code, una línea a la vez)
+## Installation (in the VS Code terminal, one line at a time)
 
 ```bash
 python3 -m venv venv
@@ -20,40 +20,40 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Ejecución
+## Running
 
 ```bash
 python app.py
 ```
 
-Abre http://localhost:5000
+Open http://localhost:5000
 
-## Configuración
+## Configuration
 
-En `app.py`:
+In `app.py`:
 
-- `PERMITIR_REGISTRO_ADMIN = True` deja elegir "Administrador" en el registro (para la demo).
-- Pon `False` si quieres que el registro solo cree Asistentes de caja.
+- `PERMITIR_REGISTRO_ADMIN = True` lets users pick "Administrator" at sign-up (for the demo).
+- Set it to `False` if you want sign-up to only create Cashier Assistants.
 
-Los datos se guardan en `restaurante.db` (SQLite), que se crea solo desde `restaurante_db.sql` la primera vez. Para reiniciar la demo, borra ese archivo.
+Data is stored in `restaurante.db` (SQLite), which is created automatically from `restaurante_db.sql` the first time. To reset the demo, delete that file.
 
-## Nota de seguridad
+## Security note
 
-Las contraseñas se guardan como hash (scrypt con sal), no en texto plano. Esta demo no tiene HTTPS ni protección CSRF, así que no la publiques en internet tal cual.
+Passwords are stored as hashes (scrypt with salt), not as plain text. This demo has no HTTPS or CSRF protection, so do not expose it to the internet as-is.
 
-## Data (diagrama de la base de datos)
+## Data (database diagram)
 
-- En el panel de **Administrador** hay un botón verde **Data** (arriba a la derecha). Abre `/data`: el esquema real de `restaurante.db` (tablas, llaves primarias PK, foráneas FK, conteo de filas y últimas filas). Se actualiza solo al agregar usuarios o ventas.
-- `python esquema.py` imprime el esquema en JSON (formato `lucid_create_erd`).
-- Skill del proyecto: `.claude/skills/actualizar-lucid-erd` → con Claude Code y el MCP de Lucid redibuja el ERD en Lucid y guarda el enlace en `lucid_erd.json` (el botón Data lo muestra).
+- The **Administrator** dashboard has a green **Data** button (top right). It opens `/data`: the real schema of `restaurante.db` (tables, primary keys PK, foreign keys FK, row counts and latest rows). It refreshes by itself when users or sales are added.
+- `python esquema.py` prints the schema as JSON (`lucid_create_erd` format).
+- Project skill: `.claude/skills/actualizar-lucid-erd` → with Claude Code and the Lucid MCP it redraws the ERD in Lucid and saves the link in `lucid_erd.json` (the Data button shows it).
 
-### Requisito para Lucid
+### Lucid requirement
 
-Para usar la skill y abrir el diagrama debes **poder ingresar a Lucid con tu email** (cuenta en lucid.app) y tener el conector **Lucid** autorizado en Claude (claude.ai → Conectores). Sin esa cuenta/autorización la skill no puede crear ni actualizar el diagrama.
+To use the skill and open the diagram you must be **able to sign in to Lucid with your email** (a lucid.app account) and have the **Lucid** connector authorized in Claude (claude.ai → Connectors). Without that account/authorization the skill cannot create or update the diagram.
 
-## Pagos Bitcoin (trazabilidad)
+## Bitcoin payments (traceability)
 
-- Al elegir **Bitcoin** se consulta BTC/USD (Coinbase → Kraken validado) y se guarda una copia inmutable en `cotizacion_btc` con fuente, hora UTC y respuesta cruda. Si no hay precio válido, **la venta no se crea**. Ya no existe la tasa fija `BTC_USD_RATE`.
-- Un pendiente se considera vencido pasados `BTC_QUOTE_TTL_MIN` min (15). Zona horaria de las ventas: `BTC_LOCAL_TZ` (America/El_Salvador).
-- Skill de Claude Code: `.claude/skills/bitcoin-price-payment-auditor` (auditoría: `python3 .claude/skills/bitcoin-price-payment-auditor/scripts/audit_transactions.py`).
-- Pruebas: `python3 -m unittest discover -s .claude/skills/bitcoin-price-payment-auditor/tests -v`
+- When **Bitcoin** is chosen, BTC/USD is queried (Coinbase → validated Kraken) and an immutable copy is stored in `cotizacion_btc` with source, UTC time and raw response. If there is no valid price, **the sale is not created**. The fixed `BTC_USD_RATE` rate no longer exists.
+- A pending payment is considered expired after `BTC_QUOTE_TTL_MIN` minutes (15). Time zone of the sales: `BTC_LOCAL_TZ` (America/El_Salvador).
+- Claude Code skill: `.claude/skills/bitcoin-price-payment-auditor` (audit: `python3 .claude/skills/bitcoin-price-payment-auditor/scripts/audit_transactions.py`).
+- Tests: `python3 -m unittest discover -s .claude/skills/bitcoin-price-payment-auditor/tests -v`

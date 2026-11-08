@@ -4,16 +4,16 @@
 {% block content %}
 <div class="topbar"><h1>DTE details</h1><a class="btn btn-sec" style="margin:0" href="{{ url_for('panel') }}">← Panel</a></div>
 <table>
-  <tr><th>ID</th><th>Fecha</th><th>Documento</th><th>Pago</th><th>Total</th><th>Estado DTE</th><th></th></tr>
+  <tr><th>ID</th><th>Date</th><th>Document</th><th>Payment</th><th>Total</th><th>DTE status</th><th></th></tr>
   {% for v in ventas %}
   <tr>
     <td>{{ v['id'] }}</td><td>{{ v['fecha_hora'] or '—' }}</td><td>{{ v['documento'] }}</td>
-    <td>{{ v['forma_pago'] }}</td><td>${{ '%.2f' % v['total_usd'] }}</td><td>{{ v['estado'] or 'Sin estado' }}</td>
+    <td>{{ v['forma_pago'] }}</td><td>${{ '%.2f' % v['total_usd'] }}</td><td>{{ v['estado'] or 'No status' }}</td>
     <td><div class="menu">
       <button class="small-btn" style="background:#722f37" type="button">Detail ▾</button>
       <div class="menu-items">
-        <a href="{{ url_for('dte_recibo', vid=v['id']) }}" target="_blank">Recibo PDF</a>
-        <a href="{{ url_for('dte_json', vid=v['id']) }}">Descargar DTE (JSON)</a>
+        <a href="{{ url_for('dte_recibo', vid=v['id']) }}" target="_blank">Receipt PDF</a>
+        <a href="{{ url_for('dte_json', vid=v['id']) }}">Download DTE (JSON)</a>
         {% if v['jws'] %}
         <a href="{{ url_for('dte_jws', vid=v['id']) }}">JWS (Signed DTE)</a>
         {% else %}
@@ -21,6 +21,6 @@
         {% endif %}
       </div></div></td>
   </tr>
-  {% else %}<tr><td colspan="7">Todavía no hay ventas.</td></tr>{% endfor %}
+  {% else %}<tr><td colspan="7">No sales yet.</td></tr>{% endfor %}
 </table>
 {% endblock %}

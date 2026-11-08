@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Confirma un pago Bitcoin leyendo un JSON. Funciona sin internet.
+"""Confirms a Bitcoin payment by reading a JSON file. Works offline.
 
-  python confirmar_pago.py pago_ejemplo.json   -> confirma la venta
-  python confirmar_pago.py --pendientes        -> lista las ventas pendientes y su id_pago
+  python confirmar_pago.py pago_ejemplo.json   -> confirms the sale
+  python confirmar_pago.py --pendientes        -> lists pending sales and their id_pago
 """
 import json
 import os
@@ -24,9 +24,9 @@ def main():
     if sys.argv[1] == "--pendientes":
         filas = db.execute("SELECT * FROM venta_bitcoin WHERE estado = 'pendiente' ORDER BY id").fetchall()
         if not filas:
-            print("No hay pagos pendientes.")
+            print("There are no pending payments.")
         for r in filas:
-            print("venta #%d  id_pago=%s  $%.2f  %d sats  precio=%.2f" % (
+            print("sale #%d  id_pago=%s  $%.2f  %d sats  precio=%.2f" % (
                 r["venta_id"], r["id_pago"], r["total_usd"], r["total_sats"], r["precio_btc_usd"]))
         return 0
 
@@ -34,7 +34,7 @@ def main():
         with open(sys.argv[1], encoding="utf-8") as f:
             pago = json.load(f)
     except (OSError, json.JSONDecodeError) as e:
-        print("ERROR: no se pudo leer el JSON:", e)
+        print("ERROR: could not read the JSON:", e)
         return 1
 
     ok, msg = confirmar(db, pago)

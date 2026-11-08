@@ -1,8 +1,8 @@
-"""Arma el DTE de una venta: dte_plantilla.json (emisor + campos fijos) + datos de SQLite.
+"""Builds the DTE of a sale: dte_plantilla.json (issuer + fixed fields) + SQLite data.
 
-Salida SIN firmar: lista para pasarla al firmador electrónico y luego a Hacienda.
+UNSIGNED output: ready to hand to the electronic signer and then to Hacienda.
     python3 dte.py <venta_id> [-o archivo.json]
-Tipos: 01 Factura, 03 Comprobante de Crédito Fiscal, 11 Factura de exportación.
+Types: 01 Invoice (Factura), 03 Tax Credit Voucher (Comprobante de Crédito Fiscal), 11 Export invoice (Factura de exportación).
 """
 import json
 import os
@@ -13,11 +13,11 @@ import uuid
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "restaurante.db"))
 PLANTILLA = os.path.join(BASE_DIR, "dte_plantilla.json")
-CLIENTES_ENV = os.path.join(BASE_DIR, ".env.clientes")  # NIT/NRC/nombre/dirección (CCF), fuera de la BD
+CLIENTES_ENV = os.path.join(BASE_DIR, ".env.clientes")  # NIT/NRC/name/address (CCF), kept outside the DB
 IVA = 0.13
 NS = uuid.UUID("6f1c1c3e-5a0e-4b8e-9a43-0d1e5b7a2c11")
 
-# Esquemas 01 y 11 (v1) solo aceptan códigos de pago <= 10 y 99; el 03 (v3) acepta 11 y 12.
+# Schemas 01 and 11 (v1) only accept payment codes <= 10 and 99; 03 (v3) accepts 11 and 12.
 PAGOS_NO_VALIDOS_FE = {"11", "12"}
 
 _U = ["", "UN", "DOS", "TRES", "CUATRO", "CINCO", "SEIS", "SIETE", "OCHO", "NUEVE", "DIEZ", "ONCE", "DOCE",
@@ -51,7 +51,7 @@ def total_letras(total):
 
 
 def datos_fiscales(venta_id):
-    """Última línea de .env.clientes para esa venta (o None)."""
+    """Last line of .env.clientes for that sale (or None)."""
     res = None
     try:
         with open(CLIENTES_ENV, encoding="utf-8") as f:
@@ -68,14 +68,14 @@ def datos_fiscales(venta_id):
 
 
 def codigo_pago(tipo_dte, codigo):
-    """Valida el código de pago contra el tipo de documento; si no sirve usa 99 (Otros)."""
+    """Validates the payment code against the document type; if invalid, uses 99 (Others)."""
     if tipo_dte in ("01", "11") and codigo in PAGOS_NO_VALIDOS_FE:
         return "99"
     return codigo
 
 
-# codigoGeneracion: UUID en MAYÚSCULAS, distinto para cada DTE y guardado una sola vez en dte_codigo.
-# Las ventas que ya existían conservan el código que tenían (uuid5 por venta) para no cambiar nada.
+# codigoGeneracion: UPPERCASE UUID, different for each DTE and stored only once in dte_codigo.
+# Sales that already existed keep the code they had (uuid5 per sale) so nothing changes.
 SQL_DTE_CODIGO = """
 CREATE TABLE IF NOT EXISTS dte_codigo (
     venta_id          INTEGER NOT NULL,
@@ -87,9 +87,9 @@ CREATE TABLE IF NOT EXISTS dte_codigo (
     FOREIGN KEY (venta_id) REFERENCES venta(id)
 );
 CREATE TRIGGER IF NOT EXISTS dte_codigo_no_update BEFORE UPDATE ON dte_codigo
-BEGIN SELECT RAISE(ABORT, 'codigoGeneracion es inmutable'); END;
+BEGIN SELECT RAISE(ABORT, 'codigoGeneracion is immutable'); END;
 CREATE TRIGGER IF NOT EXISTS dte_codigo_no_delete BEFORE DELETE ON dte_codigo
-BEGIN SELECT RAISE(ABORT, 'codigoGeneracion es inmutable'); END;
+BEGIN SELECT RAISE(ABORT, 'codigoGeneracion is immutable'); END;
 """
 
 
@@ -98,7 +98,7 @@ def _codigo_legado(venta_id):
 
 
 def migrar(db):
-    """Idempotente: crea dte_codigo y asigna código a las ventas que todavía no lo tienen."""
+    """Idempotent: creates dte_codigo and assigns a code to sales that do not have one yet."""
     db.executescript(SQL_DTE_CODIGO)
     pendientes = db.execute(
         "SELECT v.id, t.codigo FROM venta v JOIN tipo_cliente t ON t.id = v.tipo_cliente_id "
@@ -111,8 +111,8 @@ def migrar(db):
 
 
 def obtener_codigo_generacion(db, venta_id, tipo_dte):
-    """codigoGeneracion del DTE de esa venta y tipo. La primera vez crea un UUID v4 en MAYÚSCULAS y lo guarda.
-    No confirma la transacción: quien llama hace commit."""
+    """codigoGeneracion of the DTE for that sale and type. The first time it creates an UPPERCASE UUID v4 and stores it.
+    Does not commit the transaction: the caller commits."""
     fila = db.execute("SELECT codigo_generacion FROM dte_codigo WHERE venta_id = ? AND tipo_dte = ?",
                       (venta_id, tipo_dte)).fetchone()
     if fila:
@@ -162,7 +162,7 @@ def construir_dte(db, venta_id):
 
     items, suma = [], 0.0
     for i, f in enumerate(filas, 1):
-        bruto = round(f["cantidad"] * f["precio_unitario"], 2)  # precios del menú con IVA incluido
+        bruto = round(f["cantidad"] * f["precio_unitario"], 2)  # menu prices include VAT
         it = {"numItem": i, "tipoItem": 1, "numeroDocumento": None, "cantidad": f["cantidad"],
               "codigo": str(f["platillo_id"]), "codTributo": None, "uniMedida": 59,
               "descripcion": f["nombre"], "montoDescu": 0, "ventaNoSuj": 0, "ventaExenta": 0}
@@ -171,7 +171,7 @@ def construir_dte(db, venta_id):
             gravada = round(f["cantidad"] * neto, 2)
             it.update(precioUni=neto, ventaGravada=gravada, tributos=["20"], psv=0, noGravado=0)
             suma += gravada
-        elif tipo == "11":  # exportación: tasa 0 %
+        elif tipo == "11":  # export: 0 % rate
             it.update(precioUni=f["precio_unitario"], ventaGravada=bruto, tributos=None, noGravado=0)
             suma += bruto
         else:
@@ -206,7 +206,7 @@ def construir_dte(db, venta_id):
         r["totalIva"] = iva
     dte["resumen"] = r
 
-    if r["pagos"][0]["codigo"] != v["pago_cod"]:  # detalle real del pago (atestación)
+    if r["pagos"][0]["codigo"] != v["pago_cod"]:  # actual payment detail (attestation)
         dte["apendice"] = [{"campo": "pagoReal", "etiqueta": "Forma de pago real",
                             "valor": "%s (%s)" % (v["pago_nombre"], v["pago_cod"])}]
     return dte
@@ -219,7 +219,7 @@ if __name__ == "__main__":
     migrar(con)
     d = construir_dte(con, int(sys.argv[1]))
     if d is None:
-        raise SystemExit("No existe esa venta")
+        raise SystemExit("That sale does not exist")
     txt = json.dumps(d, ensure_ascii=False, indent=2)
     if "-o" in sys.argv:
         open(sys.argv[sys.argv.index("-o") + 1], "w", encoding="utf-8").write(txt + "\n")

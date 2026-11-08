@@ -1,11 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Panel{% endblock %}
+{% block title %}Dashboard{% endblock %}
 {% block cardclass %}wide{% endblock %}
 {% block content %}
 <style>
   a.cierre-btn { text-decoration:none; display:inline-block; width:auto; margin:0; background:#bfdbfe; color:#1e3a8a; padding:.55rem 1.3rem;
                 border-radius:8px; font-weight:600; font-size:1rem; border:0; cursor:pointer; }
   .cierre-btn:hover { background:#93c5fd; }
+  a.f07-btn { text-decoration:none; display:inline-block; width:auto; margin:0; background:#7c3aed; color:#fff;
+              padding:.55rem 1.3rem; border-radius:8px; font-weight:700; font-size:1rem; }
+  a.f07-btn:hover { background:#6d28d9; }
+  a.f14-btn { text-decoration:none; display:inline-block; width:auto; margin:0; background:#0f766e; color:#fff;
+              padding:.55rem 1.3rem; border-radius:8px; font-weight:700; font-size:1rem; }
+  a.f14-btn:hover { background:#0d6b65; }
   a.btc-btn { text-decoration:none; display:inline-flex; align-items:center; gap:.5rem; background:#f7931a; color:#3b1d00;
               padding:.45rem 1.2rem .45rem .45rem; border-radius:8px; font-weight:700; font-size:1rem; box-shadow:0 2px 6px #f7931a66; }
   a.btc-btn:hover { background:#e07f0b; }
@@ -14,27 +20,29 @@
   .btc-badge img { width:1.15rem; height:1.15rem; display:block; }
 </style>
 <div class="topbar">
-  <h1>Hola, {{ session['username'] }}
+  <h1>Hello, {{ session['username'] }}
     <span class="badge">{{ session['rol'] }}</span>
   </h1>
-  {% if session['es_admin'] %}<span><a class="btc-btn" href="{{ url_for('bitcoin_detalle') }}" title="Detalle de pagos Bitcoin"><span class="btc-badge"><img src="{{ url_for('static', filename='bitcoin.svg') }}" alt="Bitcoin"></span>Detail</a> <a class="cierre-btn" href="{{ url_for('cierre') }}">Cierre diario</a> <a class="dte-btn" href="{{ url_for('dte_lista') }}">DTE details</a> <a class="data-btn" href="{{ url_for('data') }}">Data</a>
-  <form method="post" action="{{ url_for('firmar_pendientes') }}" style="display:inline;margin:0"><button class="small-btn" type="submit" style="background:#166534;font-size:.9rem" title="Firma todos los DTEs Signed/Sended/Approved que aún no tienen JWS">Sign All</button></form></span>{% endif %}
+  {% if session['es_admin'] %}<span><a class="btc-btn" href="{{ url_for('bitcoin_detalle') }}" title="Bitcoin payment details"><span class="btc-badge"><img src="{{ url_for('static', filename='bitcoin.svg') }}" alt="Bitcoin"></span>Detail</a> <a class="cierre-btn" href="{{ url_for('cierre') }}">Daily close</a> <a class="dte-btn" href="{{ url_for('dte_lista') }}">DTE details</a> <a class="data-btn" href="{{ url_for('data') }}">Data</a>
+  <a class="f07-btn" href="{{ url_for('f07') }}">F-07</a>
+  <a class="f14-btn" href="{{ url_for('f14') }}">F-14</a>
+  <form method="post" action="{{ url_for('firmar_pendientes') }}" style="display:inline;margin:0"><button class="small-btn" type="submit" style="background:#166534;font-size:.9rem" title="Signs all Signed/Sent/Approved DTEs that do not have a JWS yet">Sign All</button></form></span>{% endif %}
 </div>
 
 {% if true %}
-  <h2>Empleados</h2>
+  <h2>Employees</h2>
   <table>
-    <tr><th>ID</th><th>Usuario</th><th>Rol</th></tr>
+    <tr><th>ID</th><th>Username</th><th>Role</th></tr>
     {% for e in empleados %}
     <tr><td>{{ e['id'] }}</td><td>{{ e['nombre_usuario'] or '—' }}</td><td>{{ e['rol'] }}</td></tr>
     {% endfor %}
   </table>
 {% endif %}
 
-<h2>{{ 'Todas las ventas' if session['es_admin'] else 'Mis ventas' }}</h2>
+<h2>{{ 'All sales' if session['es_admin'] else 'My sales' }}</h2>
 <table>
-  <tr><th>ID</th><th>Fecha</th><th>Documento</th><th>Pago</th>
-      {% if session['es_admin'] %}<th>Empleado</th>{% endif %}<th>Total</th><th>Estado DTE</th>
+  <tr><th>ID</th><th>Date</th><th>Document</th><th>Payment</th>
+      {% if session['es_admin'] %}<th>Employee</th>{% endif %}<th>Total</th><th>DTE status</th>
       {% if session['es_admin'] %}<th></th>{% endif %}</tr>
   {% for v in ventas %}
   <tr>
@@ -42,10 +50,10 @@
     <td>{{ v['fecha_hora'] or '—' }}</td>
     <td>{{ v['documento'] }}</td>
     <td>{{ v['forma_pago'] }}
-      {% if v['btc_estado'] %}<br><small title="{{ v['btc_id_pago'] }}"><b>{{ v['btc_estado']|upper }}</b> · {{ v['btc_id_pago'] }}</small>{% endif %}</td>
+      {% if v['btc_estado'] %}<br><small title="{{ v['btc_id_pago'] }}"><b>{{ {'pendiente': 'PENDING', 'pagada': 'PAID', 'rechazada': 'REJECTED'}.get(v['btc_estado'], v['btc_estado']|upper) }}</b> · {{ v['btc_id_pago'] }}</small>{% endif %}</td>
     {% if session['es_admin'] %}<td>{{ v['empleado'] or '—' }}</td>{% endif %}
     <td>${{ '%.2f' % v['total_usd'] }}</td>
-    <td>{{ v['estado'] or 'Sin estado' }}</td>
+    <td>{{ v['estado'] or 'No status' }}</td>
     {% if session['es_admin'] %}
     <td>
       {% if (v['paso'] or 0) < 5 %}
@@ -63,10 +71,10 @@
     {% endif %}
   </tr>
   {% else %}
-  <tr><td colspan="8">Todavía no hay ventas.</td></tr>
+  <tr><td colspan="8">No sales yet.</td></tr>
   {% endfor %}
 </table>
 
-<a class="btn" href="{{ url_for('nueva_venta') }}">+ Registrar venta</a>
-<a class="btn btn-sec" href="{{ url_for('logout') }}">Cerrar sesión</a>
+<a class="btn" href="{{ url_for('nueva_venta') }}">+ Record sale</a>
+<a class="btn btn-sec" href="{{ url_for('logout') }}">Log out</a>
 {% endblock %}

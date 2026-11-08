@@ -1,6 +1,6 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cierre diario</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily close</title>
 <style>
   *{box-sizing:border-box} body{margin:0;font-family:system-ui,sans-serif;background:#eef4fb;display:block;padding:0}
   table{width:100%;border-collapse:collapse} th,td{text-align:left;border-bottom:1px solid #eee}
@@ -46,23 +46,23 @@
 </style></head><body>
 <div id="cierre">
   <div class="hd">
-    <div><h2>📊 Cierre diario</h2><div class="sub" id="cRango"></div></div>
+    <div><h2>📊 Daily close</h2><div class="sub" id="cRango"></div></div>
     <div class="tabs">
-      <button data-r="hoy" class="on">Hoy</button><button data-r="semana">Semana</button><button data-r="mes">Mes</button>
+      <button data-r="hoy" class="on">Today</button><button data-r="semana">Week</button><button data-r="mes">Month</button>
     </div>
-    <a class="cerrar" href="{{ url_for('panel') }}">← Volver al panel</a>
+    <a class="cerrar" href="{{ url_for('panel') }}">← Back to dashboard</a>
   </div>
   <div class="kpis" id="cKpis"></div>
   <div class="grid">
-    <div class="panel c8"><h3 id="cSerieT">Ventas</h3><div id="cSerie"></div></div>
-    <div class="panel c4"><h3>Formas de pago</h3><div id="cPago"></div></div>
-    <div class="panel c4"><h3>Top platillos (unidades)</h3><div id="cTop"></div></div>
-    <div class="panel c4"><h3>Por categoría</h3><div id="cCat"></div></div>
-    <div class="panel c4"><h3>Tipo de documento</h3><div id="cDoc"></div></div>
-    <div class="panel c4"><h3>Estado DTE</h3><div id="cEstado"></div></div>
-    <div class="panel c4"><h3>Por empleado</h3><div id="cEmp"></div></div>
-    <div class="panel c4"><h3>Resumen</h3><div id="cRes"></div></div>
-    <div class="panel c12"><h3>Detalle de recibos</h3><div class="scroll" id="cRecibos"></div></div>
+    <div class="panel c8"><h3 id="cSerieT">Sales</h3><div id="cSerie"></div></div>
+    <div class="panel c4"><h3>Payment methods</h3><div id="cPago"></div></div>
+    <div class="panel c4"><h3>Top dishes (units)</h3><div id="cTop"></div></div>
+    <div class="panel c4"><h3>By category</h3><div id="cCat"></div></div>
+    <div class="panel c4"><h3>Document type</h3><div id="cDoc"></div></div>
+    <div class="panel c4"><h3>DTE status</h3><div id="cEstado"></div></div>
+    <div class="panel c4"><h3>By employee</h3><div id="cEmp"></div></div>
+    <div class="panel c4"><h3>Summary</h3><div id="cRes"></div></div>
+    <div class="panel c12"><h3>Receipt details</h3><div class="scroll" id="cRecibos"></div></div>
   </div>
 </div>
 <script>
@@ -74,7 +74,7 @@
   let rango='hoy', timer=null;
 
   function bars(el,rows,key,fmt){
-    if(!rows.length) return el.innerHTML='<div class="vacio">Sin datos</div>';
+    if(!rows.length) return el.innerHTML='<div class="vacio">No data</div>';
     const max=Math.max(...rows.map(r=>r[key]))||1;
     el.innerHTML=rows.map((r,i)=>`<div class="bar"><span class="n" title="${esc(r.nombre)}">${esc(r.nombre)}</span>
       <span class="t"><i style="width:${Math.max(r[key]/max*100,3)}%;background:${COL[i%COL.length]}"></i></span>
@@ -82,7 +82,7 @@
   }
   function donut(el,rows){
     const tot=rows.reduce((a,r)=>a+r.total,0);
-    if(!tot) return el.innerHTML='<div class="vacio">Sin datos</div>';
+    if(!tot) return el.innerHTML='<div class="vacio">No data</div>';
     let a=0,paths='';const R=40,C=2*Math.PI*R;
     rows.forEach((r,i)=>{const f=r.total/tot;
       paths+=`<circle r="${R}" cx="60" cy="60" fill="none" stroke="${COL[i%COL.length]}" stroke-width="22"
@@ -99,7 +99,7 @@
       g+=`<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="#e2e8f0"/><text x="${pl-4}" y="${y+3}" text-anchor="end" font-size="9" fill="#94a3b8">$${Math.round(max*i/4)}</text>`;}
     const every=Math.ceil(n/12);
     s.forEach((x,i)=>{const h=(H-pb-10)*x.total/max,xx=pl+i*bw+bw*.15;
-      g+=`<rect x="${xx}" y="${H-pb-h}" width="${bw*.7}" height="${h}" rx="3" fill="#60a5fa"><title>${x.etiqueta}: ${money(x.total)} · ${x.ventas} recibos</title></rect>`;
+      g+=`<rect x="${xx}" y="${H-pb-h}" width="${bw*.7}" height="${h}" rx="3" fill="#60a5fa"><title>${x.etiqueta}: ${money(x.total)} · ${x.ventas} receipts</title></rect>`;
       if(x.total>0&&n<=16) g+=`<text x="${xx+bw*.35}" y="${H-pb-h-3}" text-anchor="middle" font-size="9" fill="#1e3a8a">${money(x.total).replace('.00','')}</text>`;
       if(i%every===0) g+=`<text x="${xx+bw*.35}" y="${H-8}" text-anchor="middle" font-size="9" fill="#64748b">${x.etiqueta}</text>`;});
     el.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${g}</svg>`;
@@ -109,11 +109,11 @@
   function pintar(d){
     $('cRango').textContent=d.etiqueta+' · '+(d.desde===d.hasta?d.desde:d.desde+' – '+d.hasta);
     const k=d.kpi;
-    $('cKpis').innerHTML=kpi('#60a5fa','Total vendido',money(k.total))+kpi('#34d399','Recibos',k.ventas)
-      +kpi('#fbbf24','Ticket promedio',money(k.ticket))+kpi('#f472b6','Platos vendidos',k.platos)
-      +kpi('#a78bfa','DTE completos',k.completas)+kpi('#fb923c','Pendientes de Hacienda',k.pendientes_hacienda)
-      +kpi('#2dd4bf','Bitcoin pendiente',k.btc_pendientes);
-    $('cSerieT').textContent=d.rango==='hoy'?'Ventas por hora ($)':'Ventas por día ($)';
+    $('cKpis').innerHTML=kpi('#60a5fa','Total sold',money(k.total))+kpi('#34d399','Receipts',k.ventas)
+      +kpi('#fbbf24','Average ticket',money(k.ticket))+kpi('#f472b6','Dishes sold',k.platos)
+      +kpi('#a78bfa','Completed DTEs',k.completas)+kpi('#fb923c','Pending with Hacienda',k.pendientes_hacienda)
+      +kpi('#2dd4bf','Bitcoin pending',k.btc_pendientes);
+    $('cSerieT').textContent=d.rango==='hoy'?'Sales per hour ($)':'Sales per day ($)';
     serie($('cSerie'),d.serie);
     donut($('cPago'),d.por_pago); donut($('cDoc'),d.por_documento);
     bars($('cTop'),d.top_platos,'cantidad',v=>v+' u.');
@@ -121,16 +121,16 @@
     bars($('cEstado'),d.por_estado,'ventas',v=>v);
     bars($('cEmp'),d.por_empleado,'total',money);
     const mejor=d.serie.reduce((a,x)=>x.total>a.total?x:a,{total:0,etiqueta:'—'});
-    $('cRes').innerHTML=[['Mejor '+(d.rango==='hoy'?'hora':'día'),mejor.total?mejor.etiqueta+' ('+money(mejor.total)+')':'—'],
-      ['Platillo estrella',d.top_platos[0]?d.top_platos[0].nombre:'—'],
-      ['Pago principal',d.por_pago[0]?d.por_pago[0].nombre:'—'],
-      ['Promedio por plato',money(k.platos?k.total/k.platos:0)]]
+    $('cRes').innerHTML=[['Best '+(d.rango==='hoy'?'hour':'day'),mejor.total?mejor.etiqueta+' ('+money(mejor.total)+')':'—'],
+      ['Star dish',d.top_platos[0]?d.top_platos[0].nombre:'—'],
+      ['Main payment method',d.por_pago[0]?d.por_pago[0].nombre:'—'],
+      ['Average per dish',money(k.platos?k.total/k.platos:0)]]
       .map(r=>`<div class="bar"><span class="n" style="width:50%">${r[0]}</span><span class="v" style="width:50%;font-weight:600">${esc(r[1])}</span></div>`).join('');
-    $('cRecibos').innerHTML=d.recibos.length?`<table><tr><th>#</th><th>Fecha</th><th>Documento</th><th>Pago</th><th>Platillos</th><th>Empleado</th><th>Estado DTE</th><th style="text-align:right">Total</th></tr>`
+    $('cRecibos').innerHTML=d.recibos.length?`<table><tr><th>#</th><th>Date</th><th>Document</th><th>Payment</th><th>Dishes</th><th>Employee</th><th>DTE status</th><th style="text-align:right">Total</th></tr>`
       +d.recibos.map(v=>`<tr><td>${String(v.id).padStart(4,'0')}</td><td>${esc(v.fecha_hora)}</td><td>${esc(v.documento)}</td><td>${esc(v.forma_pago)}</td>
-      <td>${esc(v.items)}</td><td>${esc(v.empleado||'—')}</td><td><span class="pill ${v.paso===5?'ok':''}">${esc(v.estado||'Sin estado')}</span></td>
+      <td>${esc(v.items)}</td><td>${esc(v.empleado||'—')}</td><td><span class="pill ${v.paso===5?'ok':''}">${esc(v.estado||'No status')}</span></td>
       <td style="text-align:right"><b>${money(v.total_usd)}</b></td></tr>`).join('')+'</table>'
-      :'<div class="vacio">No hay recibos en este periodo.</div>';
+      :'<div class="vacio">There are no receipts in this period.</div>';
   }
   function cargar(){
     fetch('{{ url_for("cierre_json") }}?rango='+rango,{credentials:'same-origin'}).then(r=>r.json()).then(pintar)

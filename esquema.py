@@ -1,7 +1,7 @@
-"""Lee el esquema REAL de la base SQLite (tablas, PK, FK, filas) para dibujarlo.
+"""Reads the REAL schema of the SQLite database (tables, PK, FK, rows) in order to draw it.
 
-Lo usan la pantalla /data de la app y el script de la skill de Lucid:
-    python esquema.py            -> JSON listo para lucid_create_erd
+Used by the app's /data screen and the Lucid skill script:
+    python esquema.py            -> JSON ready for lucid_create_erd
 """
 import json
 import os
@@ -11,11 +11,11 @@ import sys
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "restaurante.db"))
 LUCID_JSON = os.path.join(BASE_DIR, "lucid_erd.json")
-OCULTAS = {"password_hash"}  # nunca mostrar hashes
+OCULTAS = {"password_hash"}  # never show hashes
 
 
 def lucid_url():
-    """URL del diagrama en Lucid (la guarda la skill en lucid_erd.json)."""
+    """URL of the diagram in Lucid (saved by the skill in lucid_erd.json)."""
     try:
         with open(LUCID_JSON, encoding="utf-8") as f:
             return json.load(f).get("url")
@@ -65,7 +65,7 @@ def leer_esquema(db, con_filas=0):
 if __name__ == "__main__":
     con = sqlite3.connect(DB_PATH)
     ents, rels = leer_esquema(con)
-    for e in ents:  # formato de lucid_create_erd
+    for e in ents:  # lucid_create_erd format
         e["attributes"] = [{k: v for k, v in a.items() if k != "fk" and v is not None} for a in e["attributes"]]
         e.pop("rows")
     json.dump({"entities": ents, "relationships": rels}, sys.stdout, ensure_ascii=False, indent=1)

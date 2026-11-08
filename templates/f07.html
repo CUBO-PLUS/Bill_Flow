@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>F-07 · VAT Return · {{ d.mes_nombre }} {{ d.año }}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,sans-serif;background:#f0f4f8;min-height:100vh;padding:2rem 1rem}
+    .page{max-width:960px;margin:0 auto}
+
+    /* ── HEADER ── */
+    .header{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);color:#fff;border-radius:16px;
+            padding:1.6rem 2rem;display:flex;align-items:center;justify-content:space-between;
+            box-shadow:0 8px 24px #4f46e540;margin-bottom:1.5rem}
+    .header-left{display:flex;align-items:center;gap:1rem}
+    .header-seal{width:56px;height:56px;border-radius:50%;background:#fff2;border:2px solid #fff5;
+                 display:flex;align-items:center;justify-content:center;font-size:1.8rem}
+    .header-title{font-size:1.5rem;font-weight:800;letter-spacing:-.5px}
+    .header-sub{font-size:.85rem;opacity:.85;margin-top:.15rem}
+    .header-right{text-align:right}
+    .header-periodo{font-size:1.1rem;font-weight:700;background:#fff2;border-radius:8px;
+                    padding:.4rem 1rem;border:1px solid #fff3}
+    .header-entidad{font-size:.8rem;opacity:.7;margin-top:.3rem}
+
+    /* ── PERIOD SELECTOR ── */
+    .period-bar{background:#fff;border-radius:12px;padding:1rem 1.5rem;margin-bottom:1.5rem;
+                display:flex;align-items:center;gap:1rem;box-shadow:0 2px 8px #0001;
+                flex-wrap:wrap}
+    .period-bar label{font-weight:600;color:#374151;font-size:.9rem;white-space:nowrap}
+    .period-bar input[type=month]{border:1.5px solid #e5e7eb;border-radius:8px;padding:.4rem .8rem;
+                                   font-size:.95rem;color:#374151;outline:none}
+    .period-bar input[type=month]:focus{border-color:#7c3aed}
+    .period-bar button{background:#7c3aed;color:#fff;border:0;border-radius:8px;padding:.45rem 1.2rem;
+                       font-weight:600;cursor:pointer;font-size:.9rem}
+    .period-bar button:hover{background:#6d28d9}
+    .csv-btn{text-decoration:none;display:inline-flex;align-items:center;gap:.35rem;
+             background:#16a34a;color:#fff;border-radius:8px;padding:.45rem 1.1rem;
+             font-weight:600;font-size:.9rem;white-space:nowrap}
+    .csv-btn:hover{background:#15803d}
+    .back-link{margin-left:auto;color:#6d28d9;text-decoration:none;font-size:.9rem;font-weight:600}
+    .back-link:hover{text-decoration:underline}
+
+    /* ── KPI CARDS ── */
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:1.5rem}
+    .kpi{background:#fff;border-radius:12px;padding:1.1rem 1.3rem;box-shadow:0 2px 8px #0001;
+         border-left:4px solid #7c3aed}
+    .kpi.verde{border-left-color:#059669}
+    .kpi.rojo{border-left-color:#dc2626}
+    .kpi.azul{border-left-color:#2563eb}
+    .kpi.naranja{border-left-color:#d97706}
+    .kpi-label{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;
+               color:#6b7280;margin-bottom:.35rem}
+    .kpi-val{font-size:1.6rem;font-weight:800;color:#111827}
+    .kpi-sub{font-size:.75rem;color:#9ca3af;margin-top:.2rem}
+
+    /* ── SECTIONS ── */
+    .section{background:#fff;border-radius:14px;box-shadow:0 2px 8px #0001;margin-bottom:1.5rem;overflow:hidden}
+    .section-header{padding:1rem 1.5rem;display:flex;align-items:center;gap:.7rem;
+                    border-bottom:1px solid #f3f4f6}
+    .section-header.purple{background:linear-gradient(90deg,#ede9fe,#f5f3ff)}
+    .section-header.green{background:linear-gradient(90deg,#d1fae5,#ecfdf5)}
+    .section-header.blue{background:linear-gradient(90deg,#dbeafe,#eff6ff)}
+    .section-header.red{background:linear-gradient(90deg,#fee2e2,#fef2f2)}
+    .section-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;
+                  justify-content:center;font-size:1.1rem;flex:none}
+    .section-icon.purple{background:#7c3aed;color:#fff}
+    .section-icon.green{background:#059669;color:#fff}
+    .section-icon.blue{background:#2563eb;color:#fff}
+    .section-icon.red{background:#dc2626;color:#fff}
+    .section-title{font-weight:700;font-size:1rem;color:#111827}
+    .section-count{margin-left:auto;background:#fff;border:1px solid #e5e7eb;border-radius:999px;
+                   padding:.15rem .6rem;font-size:.8rem;font-weight:600;color:#374151}
+    .section-body{padding:1.2rem 1.5rem}
+
+    /* ── LEDGER TABLES ── */
+    .libro-table{width:100%;border-collapse:collapse;font-size:.82rem}
+    .libro-table th{background:#f9fafb;color:#374151;font-weight:700;padding:.55rem .6rem;
+                    border-bottom:2px solid #e5e7eb;text-align:left;white-space:nowrap}
+    .libro-table td{padding:.5rem .6rem;border-bottom:1px solid #f3f4f6;color:#374151;vertical-align:top}
+    .libro-table tr:last-child td{border-bottom:0}
+    .libro-table tr:hover td{background:#faf5ff}
+    .libro-table .num{text-align:right;font-variant-numeric:tabular-nums;font-family:monospace}
+    .libro-table .total-row td{font-weight:700;background:#f9fafb;border-top:2px solid #e5e7eb}
+    .empty{text-align:center;color:#9ca3af;padding:1.5rem;font-size:.9rem}
+
+    /* ── F-07 FORM (boxes) ── */
+    .form-grid{display:grid;gap:.8rem}
+    .casilla{display:grid;grid-template-columns:2.5rem 1fr auto;align-items:center;gap:.7rem;
+             padding:.7rem 1rem;border:1.5px solid #e5e7eb;border-radius:10px;background:#fafafa}
+    .casilla:hover{border-color:#c4b5fd;background:#faf5ff}
+    .casilla.highlight{border-color:#7c3aed;background:#ede9fe}
+    .casilla.total{border-color:#059669;background:#ecfdf5}
+    .casilla.deuda{border-color:#dc2626;background:#fff1f2}
+    .casilla-num{width:2.2rem;height:2.2rem;background:#7c3aed;color:#fff;border-radius:6px;
+                 display:flex;align-items:center;justify-content:center;font-weight:800;
+                 font-size:.9rem;flex:none}
+    .casilla.total .casilla-num{background:#059669}
+    .casilla.deuda .casilla-num{background:#dc2626}
+    .casilla-label{font-size:.88rem;color:#374151;font-weight:500}
+    .casilla-label small{display:block;color:#9ca3af;font-size:.75rem;margin-top:.1rem}
+    .casilla-val{font-size:1.1rem;font-weight:800;color:#111827;text-align:right;white-space:nowrap;
+                 font-family:monospace}
+    .casilla.total .casilla-val{color:#065f46}
+    .casilla.deuda .casilla-val{color:#991b1b}
+
+    /* ── DIVIDER ── */
+    .divider{height:1px;background:#f3f4f6;margin:.4rem 0}
+
+    /* ── LEGAL NOTE ── */
+    .nota{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:1rem 1.2rem;
+          font-size:.8rem;color:#78350f;margin-bottom:1.5rem;display:flex;gap:.6rem;align-items:flex-start}
+    .nota-icon{font-size:1.1rem;flex:none}
+
+    @media print{
+      body{background:#fff;padding:0}
+      .period-bar,.back-link,.nota{display:none}
+      .section{box-shadow:none;border:1px solid #ddd}
+    }
+    @media(max-width:600px){
+      .kpi-grid{grid-template-columns:1fr 1fr}
+      .casilla{grid-template-columns:2rem 1fr;grid-template-rows:auto auto}
+      .casilla-val{grid-column:2;text-align:left}
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-seal">🏛️</div>
+      <div>
+        <div class="header-title">Formulario F-07</div>
+        <div class="header-sub">VAT Return and Payment · Ministry of Finance (Hacienda) · El Salvador</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-periodo">{{ d.mes_nombre }} {{ d.año }}</div>
+      <div class="header-entidad">Period {{ d.ini }} to {{ d.fin }}</div>
+    </div>
+  </div>
+
+  <!-- PERIOD SELECTOR -->
+  <form class="period-bar" method="get" action="">
+    <label for="periodo">📅 Tax period:</label>
+    <input type="month" id="periodo" name="periodo" value="{{ d.periodo }}">
+    <button type="submit">Update</button>
+    <a class="csv-btn" href="{{ url_for('f07_csv', periodo=d.periodo) }}">⬇ Download_CSV</a>
+    <a class="back-link" href="{{ url_for('panel') }}">← Back to dashboard</a>
+  </form>
+
+  <!-- NOTE -->
+  <div class="nota">
+    <span class="nota-icon">⚠️</span>
+    <span>This data is generated automatically from the ticket ledger. The values correspond to the sales recorded in the system. Input tax credit on purchases is not calculated here; it must be entered manually when filing the return on the Hacienda portal.</span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">Total gross sales</div>
+      <div class="kpi-val">${{ "%.2f"|format(d.total_ventas|float) }}</div>
+      <div class="kpi-sub">{{ (d.cf|length) + (d.ccf|length) + (d.expo|length) }} transactions</div>
+    </div>
+    <div class="kpi verde">
+      <div class="kpi-label">Taxable sales (net)</div>
+      <div class="kpi-val">${{ "%.2f"|format(d.total_gravadas_neto|float) }}</div>
+      <div class="kpi-sub">VAT taxable base</div>
+    </div>
+    <div class="kpi azul">
+      <div class="kpi-label">VAT payable 13%</div>
+      <div class="kpi-val">${{ "%.2f"|format(d.debito_fiscal|float) }}</div>
+      <div class="kpi-sub">VAT collected from customers</div>
+    </div>
+    <div class="kpi naranja">
+      <div class="kpi-label">Exports</div>
+      <div class="kpi-val">${{ "%.2f"|format(d.total_expo|float) }}</div>
+      <div class="kpi-sub">Exempt from domestic VAT</div>
+    </div>
+  </div>
+
+  <!-- LEDGER: FINAL CONSUMERS -->
+  <div class="section">
+    <div class="section-header green">
+      <div class="section-icon green">📄</div>
+      <div>
+        <div class="section-title">Sales Ledger - Final Consumers</div>
+      </div>
+      <div class="section-count">{{ d.cf|length }} records</div>
+    </div>
+    <div class="section-body">
+      {% if d.cf %}
+      <table class="libro-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>DTE code / Sale</th>
+            <th>Document</th>
+            <th>Payment method</th>
+            <th class="num">Total incl. VAT</th>
+            <th class="num">Net</th>
+            <th class="num">VAT (13%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in d.cf %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ (v.fecha_hora or '')[:10] }}</td>
+            <td style="font-size:.75rem;font-family:monospace;color:#6d28d9">
+              {{ v.codigo_generacion[:8] ~ '…' if v.codigo_generacion else '#%04d'|format(v.id) }}
+            </td>
+            <td>{{ v.documento }}</td>
+            <td>{{ v.pago }}</td>
+            <td class="num">${{ "%.2f"|format(v.total_d|float) }}</td>
+            <td class="num">${{ "%.2f"|format(v.neto_d|float) }}</td>
+            <td class="num">${{ "%.2f"|format(v.iva_d|float) }}</td>
+          </tr>
+          {% endfor %}
+          <tr class="total-row">
+            <td colspan="5">TOTALS</td>
+            <td class="num">${{ "%.2f"|format(d.total_cf|float) }}</td>
+            <td class="num">${{ "%.2f"|format(d.neto_cf|float) }}</td>
+            <td class="num">${{ "%.2f"|format(d.iva_cf|float) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty">No final consumer sales in this period.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- LEDGER: TAXPAYERS (CCF) -->
+  <div class="section">
+    <div class="section-header blue">
+      <div class="section-icon blue">🧾</div>
+      <div>
+        <div class="section-title">Sales Ledger - Taxpayers (CCF)</div>
+      </div>
+      <div class="section-count">{{ d.ccf|length }} records</div>
+    </div>
+    <div class="section-body">
+      {% if d.ccf %}
+      <table class="libro-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>DTE code / Sale</th>
+            <th>Document</th>
+            <th>Payment method</th>
+            <th class="num">Total incl. VAT</th>
+            <th class="num">Net</th>
+            <th class="num">VAT (13%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in d.ccf %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ (v.fecha_hora or '')[:10] }}</td>
+            <td style="font-size:.75rem;font-family:monospace;color:#1d4ed8">
+              {{ v.codigo_generacion[:8] ~ '…' if v.codigo_generacion else '#%04d'|format(v.id) }}
+            </td>
+            <td>{{ v.documento }}</td>
+            <td>{{ v.pago }}</td>
+            <td class="num">${{ "%.2f"|format(v.total_d|float) }}</td>
+            <td class="num">${{ "%.2f"|format(v.neto_d|float) }}</td>
+            <td class="num">${{ "%.2f"|format(v.iva_d|float) }}</td>
+          </tr>
+          {% endfor %}
+          <tr class="total-row">
+            <td colspan="5">TOTALS</td>
+            <td class="num">${{ "%.2f"|format(d.total_ccf|float) }}</td>
+            <td class="num">${{ "%.2f"|format(d.neto_ccf|float) }}</td>
+            <td class="num">${{ "%.2f"|format(d.iva_ccf|float) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty">No sales with a Tax Credit Voucher in this period.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if d.expo %}
+  <!-- LEDGER: EXPORTS -->
+  <div class="section">
+    <div class="section-header" style="background:linear-gradient(90deg,#fef3c7,#fffbeb)">
+      <div class="section-icon" style="background:#d97706;color:#fff">✈️</div>
+      <div>
+        <div class="section-title">Exports (VAT exempt)</div>
+      </div>
+      <div class="section-count">{{ d.expo|length }} records</div>
+    </div>
+    <div class="section-body">
+      <table class="libro-table">
+        <thead>
+          <tr><th>#</th><th>Date</th><th>Sale</th><th>Payment method</th><th class="num">Total</th></tr>
+        </thead>
+        <tbody>
+          {% for v in d.expo %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ (v.fecha_hora or '')[:10] }}</td>
+            <td>#{{ '%04d'|format(v.id) }}</td>
+            <td>{{ v.pago }}</td>
+            <td class="num">${{ "%.2f"|format(v.total_d|float) }}</td>
+          </tr>
+          {% endfor %}
+          <tr class="total-row">
+            <td colspan="4">TOTALS</td>
+            <td class="num">${{ "%.2f"|format(d.total_expo|float) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- F-07 BOXES -->
+  <div class="section">
+    <div class="section-header purple">
+      <div class="section-icon purple">📊</div>
+      <div>
+        <div class="section-title">F-07 Annex — Figures for the VAT Return</div>
+        <div style="font-size:.8rem;color:#6b7280;margin-top:.1rem">Period {{ d.mes_nombre }} {{ d.año }}</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="form-grid">
+
+        <div class="casilla">
+          <div class="casilla-num">1</div>
+          <div class="casilla-label">
+            Net sales to final consumers
+            <small>Invoices issued (type 01) · base excl. VAT</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.neto_cf|float) }}</div>
+        </div>
+
+        <div class="casilla">
+          <div class="casilla-num">2</div>
+          <div class="casilla-label">
+            Net sales to taxpayers
+            <small>CCFs issued (type 03) · base excl. VAT</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.neto_ccf|float) }}</div>
+        </div>
+
+        <div class="casilla highlight">
+          <div class="casilla-num">3</div>
+          <div class="casilla-label">
+            Total net taxable sales
+            <small>Box 1 + Box 2 (total taxable base)</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.total_gravadas_neto|float) }}</div>
+        </div>
+
+        {% if d.total_expo > 0 %}
+        <div class="casilla">
+          <div class="casilla-num">4</div>
+          <div class="casilla-label">
+            Exports (exempt sales)
+            <small>Export invoices (type 11)</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.total_expo|float) }}</div>
+        </div>
+        {% endif %}
+
+        <div class="divider"></div>
+
+        <div class="casilla">
+          <div class="casilla-num">5</div>
+          <div class="casilla-label">
+            VAT payable — final consumer
+            <small>Box 1 × 13% = VAT collected on invoices</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.iva_cf|float) }}</div>
+        </div>
+
+        <div class="casilla">
+          <div class="casilla-num">6</div>
+          <div class="casilla-label">
+            VAT payable — taxpayers (CCF)
+            <small>Box 2 × 13% = VAT collected on CCFs</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.iva_ccf|float) }}</div>
+        </div>
+
+        <div class="casilla highlight">
+          <div class="casilla-num">7</div>
+          <div class="casilla-label">
+            Total VAT payable for the period
+            <small>Box 5 + Box 6</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.debito_fiscal|float) }}</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="casilla">
+          <div class="casilla-num">8</div>
+          <div class="casilla-label">
+            Input tax credit on purchases / expenses
+            <small>Enter manually with Hacienda</small>
+          </div>
+          <div class="casilla-val" style="color:#9ca3af">— enter —</div>
+        </div>
+
+        <div class="casilla total">
+          <div class="casilla-num">9</div>
+          <div class="casilla-label">
+            VAT due (if Output &gt; Input)
+            <small>Box 7 − actual input tax credit</small>
+          </div>
+          <div class="casilla-val">${{ "%.2f"|format(d.debito_fiscal|float) }} *</div>
+        </div>
+
+      </div>
+      <p style="font-size:.75rem;color:#9ca3af;margin-top:1rem">
+        * Maximum amount if input tax credit = $0. Subtract your actual input tax credit before filing the return.
+      </p>
+    </div>
+  </div>
+
+  <!-- PRINT FOOTER -->
+  <div style="text-align:center;color:#9ca3af;font-size:.75rem;margin-top:1rem;margin-bottom:2rem">
+    Automatically generated from the ticket ledger · {{ d.ini }} to {{ d.fin }}
+    &nbsp;·&nbsp; <a href="#" onclick="window.print();return false" style="color:#7c3aed">Print / Save PDF</a>
+  </div>
+
+</div>
+</body>
+</html>

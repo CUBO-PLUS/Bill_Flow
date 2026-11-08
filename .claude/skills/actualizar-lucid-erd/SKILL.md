@@ -1,24 +1,24 @@
 ---
 name: actualizar-lucid-erd
-description: Actualiza el diagrama ERD de la base de datos real (restaurante.db) en Lucid usando el MCP de Lucid. Usar cuando se agregue una tabla, usuario, ticket/venta o se pida actualizar/sincronizar el dibujo de la base de datos en Lucid.
+description: Updates the ERD diagram of the real database (restaurante.db) in Lucid using the Lucid MCP. Use when a table, user, ticket/sale is added or when asked to update/sync the database drawing in Lucid.
 ---
 
-# Actualizar el ERD en Lucid
+# Update the ERD in Lucid
 
-Requiere el MCP de Lucid conectado (claude.ai → Lucid) con la cuenta/email del usuario con acceso a Lucid.
+Requires the Lucid MCP to be connected (claude.ai → Lucid) with the email/account of the user who has access to Lucid.
 
-1. Lee el esquema REAL (tablas, PK, FK, tipos) de `restaurante.db`:
+1. Read the REAL schema (tables, PK, FK, types) of `restaurante.db`:
    ```bash
    python3 esquema.py
    ```
-   Imprime JSON `{entities, relationships}` ya en el formato de `lucid_create_erd`.
-2. Antes de usar otra herramienta de Lucid, llama `get_mcp_resource` con `lucid://skills/readme`.
-3. Lee `lucid_erd.json` (si existe) para ver el `document_id` y `url` del diagrama anterior.
-4. Llama `lucid_create_erd` con título `Restaurante DTE - ERD` y ese JSON (el MCP no edita ERDs
-   existentes: se crea un documento nuevo con el esquema actual).
-5. Guarda en `lucid_erd.json`: `{"document_id": "...", "url": "<edit URL>", "actualizado": "<fecha>"}`.
-   El botón verde **Data** de la app mostrará el enlace "Abrir en Lucid".
-6. Si había un documento anterior, renómbralo con `lucid_update_document` a "(obsoleto) ..." y dile al usuario que lo borre.
-7. Valida con `lucid_export_document_as_PNG` si hace falta y comparte el enlace.
+   It prints JSON `{entities, relationships}` already in the `lucid_create_erd` format.
+2. Before using any other Lucid tool, call `get_mcp_resource` with `lucid://skills/readme`.
+3. Read `lucid_erd.json` (if it exists) to get the `document_id` and `url` of the previous diagram.
+4. Call `lucid_create_erd` with the title `Restaurante DTE - ERD` and that JSON (the MCP does not edit existing
+   ERDs: a new document is created with the current schema).
+5. Save in `lucid_erd.json`: `{"document_id": "...", "url": "<edit URL>", "actualizado": "<date>"}`.
+   The green **Data** button in the app will show the "Open in Lucid" link.
+6. If there was a previous document, rename it with `lucid_update_document` to "(obsolete) ..." and tell the user to delete it.
+7. Validate with `lucid_export_document_as_PNG` if needed and share the link.
 
-Nunca incluyas `password_hash` ni datos de usuarios: solo estructura.
+Never include `password_hash` or user data: structure only.

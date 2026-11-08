@@ -1,13 +1,13 @@
-"""Firma un DTE con svfe/svfe-api-firmador (puerto 8113) y devuelve el JWS.
+"""Signs a DTE with svfe/svfe-api-firmador (port 8113) and returns the JWS.
 
-Uso directo:
+Direct usage:
     python3 firmar.py <venta_id>
     python3 firmar.py <venta_id> -o firmado.json
 
-Requiere variables de entorno (o .env):
-    FIRMADOR_NIT          NIT del emisor (14 dígitos)
-    FIRMADOR_PASSWORD     Contraseña del certificado .crt
-    FIRMADOR_URL          URL del firmador (default: http://localhost:8113)
+Requires environment variables (or .env):
+    FIRMADOR_NIT          Issuer NIT (14 digits)
+    FIRMADOR_PASSWORD     Password of the .crt certificate
+    FIRMADOR_URL          Signer URL (default: http://localhost:8113)
 """
 import json
 import os
@@ -30,13 +30,13 @@ ENDPOINT = FIRMADOR_URL.rstrip("/") + "/firmardocumento/"
 
 def firmar(dte_json: dict, nit: str = "", password: str = "") -> dict:
     """
-    Envía el DTE al firmador y devuelve la respuesta completa.
-    La respuesta tiene la clave 'body' con el JWS (header.payload.firma).
+    Sends the DTE to the signer and returns the full response.
+    The response has a 'body' key with the JWS (header.payload.signature).
     """
     nit      = nit or FIRMADOR_NIT
     password = password or FIRMADOR_PASSWORD
     if not nit or not password:
-        raise ValueError("FIRMADOR_NIT y FIRMADOR_PASSWORD son obligatorios")
+        raise ValueError("FIRMADOR_NIT and FIRMADOR_PASSWORD are required")
 
     payload = json.dumps({
         "nit":         nit,
@@ -56,23 +56,23 @@ def firmar(dte_json: dict, nit: str = "", password: str = "") -> dict:
             return json.loads(resp.read().decode())
     except urllib.error.HTTPError as e:
         body = e.read().decode(errors="replace")
-        raise RuntimeError("Firmador HTTP %d: %s" % (e.code, body)) from e
+        raise RuntimeError("Signer HTTP %d: %s" % (e.code, body)) from e
 
 
 def jws_de_respuesta(resp: dict) -> str:
-    """Extrae el JWS de la respuesta del firmador."""
+    """Extracts the JWS from the signer response."""
     jws = resp.get("body") or resp.get("jws") or resp.get("firma")
     if not jws:
-        raise ValueError("No se encontró el JWS en la respuesta: %s" % list(resp.keys()))
+        raise ValueError("JWS not found in the response: %s" % list(resp.keys()))
     return jws
 
 
 def decodificar_jws(jws: str) -> dict:
-    """Decodifica la parte payload del JWS (sin verificar firma)."""
+    """Decodes the payload part of the JWS (without verifying the signature)."""
     import base64
     partes = jws.split(".")
     if len(partes) != 3:
-        raise ValueError("JWS inválido: se esperan 3 partes separadas por '.'")
+        raise ValueError("Invalid JWS: expected 3 parts separated by '.'")
     padding = 4 - len(partes[1]) % 4
     payload_b64 = partes[1] + ("=" * (padding % 4))
     return json.loads(base64.urlsafe_b64decode(payload_b64).decode())
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     dte_mod.migrar(con)
     dte_json = dte_mod.construir_dte(con, int(sys.argv[1]))
     if dte_json is None:
-        raise SystemExit("No existe esa venta")
+        raise SystemExit("That sale does not exist")
 
     resp = firmar(dte_json)
     jws  = jws_de_respuesta(resp)
@@ -94,15 +94,15 @@ if __name__ == "__main__":
 
     try:
         payload = decodificar_jws(jws)
-        print("Payload decodificado OK — tipoDte:", payload.get("identificacion", {}).get("tipoDte"))
+        print("Payload decoded OK — tipoDte:", payload.get("identificacion", {}).get("tipoDte"))
     except Exception as exc:
-        print("No se pudo decodificar el payload:", exc)
+        print("Could not decode the payload:", exc)
 
     resultado = {"jws": jws, "dte": dte_json, "firmador_resp": resp}
     if "-o" in sys.argv:
         out = sys.argv[sys.argv.index("-o") + 1]
         with open(out, "w", encoding="utf-8") as f:
             json.dump(resultado, f, ensure_ascii=False, indent=2)
-        print("Guardado en", out)
+        print("Saved to", out)
     else:
         print(json.dumps(resultado, ensure_ascii=False, indent=2))

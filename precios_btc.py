@@ -1,12 +1,12 @@
-"""Precios BTC/USD y conversiones financieras (solo biblioteca estándar).
+"""BTC/USD prices and financial conversions (standard library only).
 
-- Aritmética con Decimal (nunca float).
-- Fuente principal Coinbase, respaldo Kraken (validado), contraste CoinGecko.
-- Velas históricas de 1 minuto de Coinbase Exchange (reconstrucción APROXIMADA).
-- Conversión de hora local de la venta a UTC.
+- Decimal arithmetic (never float).
+- Primary source Coinbase, fallback Kraken (validated), cross-check CoinGecko.
+- Coinbase Exchange 1-minute historical candles (APPROXIMATE reconstruction).
+- Conversion of the sale's local time to UTC.
 
-Este módulo lo usa el backend (bitcoin.py / app.py) y las herramientas de la skill
-.claude/skills/bitcoin-price-payment-auditor. No escribe en la base de datos.
+This module is used by the backend (bitcoin.py / app.py) and the tools of the skill
+.claude/skills/bitcoin-price-payment-auditor. It does not write to the database.
 """
 import json
 import os
@@ -17,14 +17,14 @@ from datetime import datetime, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from zoneinfo import ZoneInfo
 
-IVA_DIVISOR = Decimal("1.13")          # IVA 13 % incluido en el precio
+IVA_DIVISOR = Decimal("1.13")          # 13 % VAT included in the price
 SATS_POR_BTC = Decimal(100_000_000)
 CENT = Decimal("0.01")
 OCHO = Decimal("0.00000001")
 UA = "registro-usuarios-btc/1.0"
 TIMEOUT = 5
-MAX_SPREAD = Decimal("0.01")           # Kraken: (ask-bid)/bid máximo aceptado
-MAX_DESVIO_CONTRASTE = Decimal("0.02")  # Kraken vs CoinGecko máximo aceptado
+MAX_SPREAD = Decimal("0.01")           # Kraken: maximum accepted (ask-bid)/bid
+MAX_DESVIO_CONTRASTE = Decimal("0.02")  # Kraken vs CoinGecko maximum accepted
 TZ_LOCAL = os.environ.get("BTC_LOCAL_TZ", "America/El_Salvador")
 TTL_MINUTOS = int(os.environ.get("BTC_QUOTE_TTL_MIN", "15"))
 
@@ -35,7 +35,7 @@ URL_COINGECKO = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_cu
 
 
 class CotizacionNoDisponible(Exception):
-    """Ninguna fuente devolvió un precio válido: NO se debe generar cobro."""
+    """No source returned a valid price: a charge must NOT be generated."""
 
 
 class PrecioInvalido(ValueError):
@@ -45,13 +45,13 @@ class PrecioInvalido(ValueError):
 # ---------------------------------------------------------------- HTTP
 
 def http_get(url, timeout=TIMEOUT):
-    """GET -> JSON. Se reemplaza en las pruebas (no se llama a internet)."""
+    """GET -> JSON. Replaced in tests (the internet is not called)."""
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
-# ---------------------------------------------------------------- tiempo
+# ---------------------------------------------------------------- time
 
 def utc_ahora():
     return datetime.now(timezone.utc)
@@ -66,8 +66,8 @@ def parse_utc(texto):
 
 
 def local_a_utc(texto, tz=None):
-    """'2026-11-04 13:23:35' (hora local sin zona) -> datetime UTC.
-    Si el texto trae offset/Z, se respeta ese offset."""
+    """'2026-11-04 13:23:35' (local time without zone) -> UTC datetime.
+    If the text carries an offset/Z, that offset is respected."""
     t = texto.strip().replace("T", " ")
     if t.endswith("Z"):
         t = t[:-1] + "+00:00"
@@ -77,28 +77,28 @@ def local_a_utc(texto, tz=None):
     return dt.astimezone(timezone.utc)
 
 
-# ---------------------------------------------------------------- dinero
+# ---------------------------------------------------------------- money
 
 def dec(valor):
-    """Convierte a Decimal sin pasar por la representación binaria del float."""
+    """Converts to Decimal without going through the binary float representation."""
     try:
         d = valor if isinstance(valor, Decimal) else Decimal(str(valor))
     except InvalidOperation:
-        raise PrecioInvalido("no es un número: %r" % (valor,))
+        raise PrecioInvalido("not a number: %r" % (valor,))
     if not d.is_finite():
-        raise PrecioInvalido("no es finito: %r" % (valor,))
+        raise PrecioInvalido("not finite: %r" % (valor,))
     return d
 
 
 def validar_precio(valor):
     d = dec(valor)
     if d <= 0:
-        raise PrecioInvalido("el precio debe ser > 0: %s" % d)
+        raise PrecioInvalido("the price must be > 0: %s" % d)
     return d
 
 
 def convertir(total_usd, precio_btc_usd):
-    """USD (IVA incluido) -> neto/IVA -> BTC -> satoshis. Devuelve Decimals/int.
+    """USD (IVA incluido) -> neto/IVA -> BTC -> satoshis. Returns Decimals/int.
 
     Redondeo (ROUND_HALF_UP):
       neto_usd = round2(total/1.13);  iva_usd  = total - neto_usd      (suman exacto)
@@ -128,12 +128,12 @@ def btc_a_usd(btc, precio):
 
 
 def diferencia_pct(original, referencia):
-    """(original - referencia) / referencia * 100, con 4 decimales."""
+    """(original - reference) / reference * 100, to 4 decimal places."""
     ref = validar_precio(referencia)
     return ((dec(original) - ref) / ref * 100).quantize(Decimal("0.0001"), ROUND_HALF_UP)
 
 
-# ---------------------------------------------------------------- cotizaciones
+# ---------------------------------------------------------------- quotes
 
 @dataclass(frozen=True)
 class Cotizacion:
@@ -141,19 +141,19 @@ class Cotizacion:
     fuente: str            # coinbase | kraken | coingecko
     tipo_precio: str       # spot | ultimo_negociado | vela_cierre
     precision: str         # exacta_al_consultar | aproximada_vela_1m
-    consultado_utc: str    # momento real de la consulta (ISO UTC)
+    consultado_utc: str    # actual moment of the query (ISO UTC)
     url: str
     bid: Decimal = None
     ask: Decimal = None
     validacion: str = ""
-    respuesta: str = ""    # JSON crudo de la fuente (evidencia)
+    respuesta: str = ""    # raw JSON from the source (evidence)
 
 
 def _coinbase_spot(get):
     r = get(URL_COINBASE_SPOT)
     d = r["data"]
     if d.get("base") != "BTC" or d.get("currency") != "USD":
-        raise PrecioInvalido("par inesperado: %s-%s" % (d.get("base"), d.get("currency")))
+        raise PrecioInvalido("unexpected pair: %s-%s" % (d.get("base"), d.get("currency")))
     return Cotizacion(validar_precio(d["amount"]), "coinbase", "spot", "exacta_al_consultar",
                       iso_utc(utc_ahora()), URL_COINBASE_SPOT, validacion="estructura y precio>0",
                       respuesta=json.dumps(r, sort_keys=True))
@@ -166,7 +166,7 @@ def _kraken(get):
     t = next(iter(r["result"].values()))
     ultimo, bid, ask = validar_precio(t["c"][0]), validar_precio(t["b"][0]), validar_precio(t["a"][0])
     if ask < bid or (ask - bid) / bid > MAX_SPREAD:
-        raise PrecioInvalido("spread inválido bid=%s ask=%s" % (bid, ask))
+        raise PrecioInvalido("invalid spread bid=%s ask=%s" % (bid, ask))
     return Cotizacion(ultimo, "kraken", "ultimo_negociado", "exacta_al_consultar",
                       iso_utc(utc_ahora()), URL_KRAKEN, bid, ask,
                       "estructura, precio>0, spread<=1%", json.dumps(r, sort_keys=True))
@@ -187,13 +187,13 @@ def consultar(fuente, get=None):
 
 
 def obtener_cotizacion(get=None):
-    """Coinbase; si falla, Kraken validado (y contrastado con CoinGecko si responde).
-    Si ninguna es válida lanza CotizacionNoDisponible: NO se genera el cobro."""
+    """Coinbase; if it fails, validated Kraken (cross-checked against CoinGecko if it responds).
+    If none is valid it raises CotizacionNoDisponible: the charge is NOT generated."""
     get = get or http_get
     errores = []
     try:
         return _coinbase_spot(get)
-    except Exception as e:  # red, JSON, estructura, precio
+    except Exception as e:  # network, JSON, structure, price
         errores.append("coinbase: %s" % e)
     try:
         k = _kraken(get)
@@ -206,7 +206,7 @@ def obtener_cotizacion(get=None):
         else:
             desvio = abs(k.precio - ref) / ref
             if desvio > MAX_DESVIO_CONTRASTE:
-                raise PrecioInvalido("Kraken %s difiere %.2f%% de CoinGecko %s" % (k.precio, desvio * 100, ref))
+                raise PrecioInvalido("Kraken %s differs %.2f%% from CoinGecko %s" % (k.precio, desvio * 100, ref))
             nota = "contrastado con coingecko (desvío %.3f%%)" % (desvio * 100)
         return Cotizacion(**{**k.__dict__, "validacion": k.validacion + "; " + nota})
     except Exception as e:
@@ -214,14 +214,14 @@ def obtener_cotizacion(get=None):
     raise CotizacionNoDisponible("; ".join(errores))
 
 
-# ---------------------------------------------------------------- históricos
+# ---------------------------------------------------------------- historical
 
 def precio_historico(momento_utc, get=None):
-    """Vela de 1 minuto de Coinbase que CONTIENE al instante dado.
+    """Coinbase 1-minute candle that CONTAINS the given instant.
 
-    Es una reconstrucción APROXIMADA: la vela no prueba el precio de un segundo concreto.
+    This is an APPROXIMATE reconstruction: the candle does not prove the price at a specific second.
     Referencia = cierre de la vela. Devuelve None si Coinbase no tiene esa vela.
-    Formato de vela Coinbase: [time, low, high, open, close, volume]."""
+    Coinbase candle format: [time, low, high, open, close, volume]."""
     get = get or http_get
     ini = momento_utc.astimezone(timezone.utc).replace(second=0, microsecond=0)
     fin = ini + timedelta(seconds=59)

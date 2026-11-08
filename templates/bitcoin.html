@@ -1,6 +1,6 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pagos Bitcoin</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bitcoin payments</title>
 <style>
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#fff7ec;color:#1f2937;min-height:100vh;padding:1.2rem 16px}
@@ -57,68 +57,68 @@
   <div class="hd">
     <div class="titulo">
       <img src="{{ url_for('static', filename='bitcoin.svg') }}" alt="Bitcoin">
-      <div><h1>Pagos Bitcoin</h1><div class="sub">{{ r.pagos }} pagos · {{ periodo }} · {% if desde == hasta %}{{ desde }}{% else %}{{ desde }} – {{ hasta }}{% endif %}</div></div>
+      <div><h1>Bitcoin payments</h1><div class="sub">{{ r.pagos }} payments · {{ periodo }} · {% if desde == hasta %}{{ desde }}{% else %}{{ desde }} – {{ hasta }}{% endif %}</div></div>
     </div>
-    <a class="volver" href="{{ url_for('panel') }}">← Volver al panel</a>
+    <a class="volver" href="{{ url_for('panel') }}">← Back to dashboard</a>
   </div>
 
   <div class="tabs">
-    <a class="tab {% if rango == 'hoy' %}on{% endif %}" href="{{ url_for('bitcoin_detalle', rango='hoy') }}">Día</a>
-    <a class="tab {% if rango == 'semana' %}on{% endif %}" href="{{ url_for('bitcoin_detalle', rango='semana') }}">Semana</a>
-    <a class="tab {% if rango == 'mes' %}on{% endif %}" href="{{ url_for('bitcoin_detalle', rango='mes') }}">Mes</a>
+    <a class="tab {% if rango == 'hoy' %}on{% endif %}" href="{{ url_for('bitcoin_detalle', rango='hoy') }}">Day</a>
+    <a class="tab {% if rango == 'semana' %}on{% endif %}" href="{{ url_for('bitcoin_detalle', rango='semana') }}">Week</a>
+    <a class="tab {% if rango == 'mes' %}on{% endif %}" href="{{ url_for('bitcoin_detalle', rango='mes') }}">Month</a>
   </div>
 
   <div class="kpis">
-    <div class="kpi" style="--c:#f7931a"><small>Total en sats</small><b>{{ '{:,}'.format(r.sats) }}</b><span>₿ {{ '%.8f' % r.btc }} BTC</span></div>
-    <div class="kpi" style="--c:#16a34a"><small>Total USD (IVA incl.)</small><b>${{ '{:,.2f}'.format(r.usd) }}</b><span>Neto ${{ '{:,.2f}'.format(r.neto) }} · IVA ${{ '{:,.2f}'.format(r.iva) }}</span></div>
-    <div class="kpi" style="--c:#22c55e"><small>Cobrado</small><b>${{ '{:,.2f}'.format(r.usd_pagado) }}</b><span>{{ '{:,}'.format(r.sats_pagado) }} sats · {{ r.estados.pagada }} pagos</span></div>
-    <div class="kpi" style="--c:#f59e0b"><small>Por cobrar</small><b>${{ '{:,.2f}'.format(r.usd_pendiente) }}</b><span>{{ '{:,}'.format(r.sats_pendiente) }} sats · {{ r.estados.pendiente }} pendientes</span></div>
+    <div class="kpi" style="--c:#f7931a"><small>Total in sats</small><b>{{ '{:,}'.format(r.sats) }}</b><span>₿ {{ '%.8f' % r.btc }} BTC</span></div>
+    <div class="kpi" style="--c:#16a34a"><small>Total USD (VAT incl.)</small><b>${{ '{:,.2f}'.format(r.usd) }}</b><span>Net ${{ '{:,.2f}'.format(r.neto) }} · VAT ${{ '{:,.2f}'.format(r.iva) }}</span></div>
+    <div class="kpi" style="--c:#22c55e"><small>Collected</small><b>${{ '{:,.2f}'.format(r.usd_pagado) }}</b><span>{{ '{:,}'.format(r.sats_pagado) }} sats · {{ r.estados.pagada }} payments</span></div>
+    <div class="kpi" style="--c:#f59e0b"><small>To collect</small><b>${{ '{:,.2f}'.format(r.usd_pendiente) }}</b><span>{{ '{:,}'.format(r.sats_pendiente) }} sats · {{ r.estados.pendiente }} pending</span></div>
   </div>
 
   <div class="panel">
-    <h2 style="margin-top:0">Avance de cobros (en USD)</h2>
+    <h2 style="margin-top:0">Collection progress (in USD)</h2>
     <div class="avance"><i style="width:{{ '%.1f' % r.pct_pagado }}%"></i></div>
     <div class="leyenda">
-      <span><i style="background:#16a34a"></i>Cobrado {{ '%.1f' % r.pct_pagado }}%</span>
-      <span><i style="background:#fcd34d"></i>Por cobrar {{ '%.1f' % (100 - r.pct_pagado) }}%</span>
+      <span><i style="background:#16a34a"></i>Collected {{ '%.1f' % r.pct_pagado }}%</span>
+      <span><i style="background:#fcd34d"></i>To collect {{ '%.1f' % (100 - r.pct_pagado) }}%</span>
     </div>
     <div class="pills">
-      <span class="pill pendiente">Pendientes: {{ r.estados.pendiente }}</span>
-      <span class="pill pagada">Pagadas: {{ r.estados.pagada }}</span>
-      <span class="pill rechazada">Rechazadas: {{ r.estados.rechazada }}</span>
+      <span class="pill pendiente">Pending: {{ r.estados.pendiente }}</span>
+      <span class="pill pagada">Paid: {{ r.estados.pagada }}</span>
+      <span class="pill rechazada">Rejected: {{ r.estados.rechazada }}</span>
     </div>
   </div>
 
-  <h2>Detalle por pago</h2>
+  <h2>Payment details</h2>
   <div class="cards">
     {% for p in pagos %}
     <article class="pago">
       <div class="top">
-        <div><small>Venta #{{ '%04d' % p.venta_id }} · {{ p.fecha_hora }}</small><div class="idp">{{ p.id_pago }}</div></div>
-        <span class="pill {{ p.estado }}">{{ p.estado|upper }}</span>
+        <div><small>Sale #{{ '%04d' % p.venta_id }} · {{ p.fecha_hora }}</small><div class="idp">{{ p.id_pago }}</div></div>
+        <span class="pill {{ p.estado }}">{{ {'pendiente': 'PENDING', 'pagada': 'PAID', 'rechazada': 'REJECTED'}.get(p.estado, p.estado|upper) }}</span>
       </div>
       <div class="hero">
         <div class="sats"><small>Sats</small><b>{{ '{:,}'.format(p.total_sats) }}</b><span>{{ '%.8f' % p.total_btc }} BTC</span></div>
-        <div><small>Total USD</small><b>${{ '{:,.2f}'.format(p.total_usd) }}</b><span>IVA incl.</span></div>
+        <div><small>Total USD</small><b>${{ '{:,.2f}'.format(p.total_usd) }}</b><span>VAT incl.</span></div>
       </div>
       <div class="split">
         <div class="split-bar"><i class="neto" style="width:{{ '%.2f' % p.pct_neto }}%"></i><i class="iva" style="width:{{ '%.2f' % p.pct_iva }}%"></i></div>
-        <div class="split-leg"><span>Neto ${{ '{:,.2f}'.format(p.neto_usd) }}</span><span>IVA 13% ${{ '{:,.2f}'.format(p.iva_usd) }}</span></div>
+        <div class="split-leg"><span>Net ${{ '{:,.2f}'.format(p.neto_usd) }}</span><span>VAT 13% ${{ '{:,.2f}'.format(p.iva_usd) }}</span></div>
       </div>
       <dl>
-        <dt>Precio BTC/USD</dt><dd>${{ '{:,.2f}'.format(p.precio_btc_usd) }}</dd>
-        <dt>Neto en BTC</dt><dd>{{ '%.8f' % p.neto_btc }}</dd>
-        <dt>IVA en BTC</dt><dd>{% if p.iva_btc is not none %}{{ '%.8f' % p.iva_btc }}{% else %}—{% endif %}</dd>
-        <dt>Fuente</dt><dd>{{ p.fuente_precio or '—' }}</dd>
-        <dt>Consulta (UTC)</dt><dd>{{ p.consulta }}</dd>
-        <dt>Registrado por</dt><dd>{{ p.empleado or '—' }}</dd>
+        <dt>BTC/USD price</dt><dd>${{ '{:,.2f}'.format(p.precio_btc_usd) }}</dd>
+        <dt>Net in BTC</dt><dd>{{ '%.8f' % p.neto_btc }}</dd>
+        <dt>VAT in BTC</dt><dd>{% if p.iva_btc is not none %}{{ '%.8f' % p.iva_btc }}{% else %}—{% endif %}</dd>
+        <dt>Source</dt><dd>{{ p.fuente_precio or '—' }}</dd>
+        <dt>Quoted at (UTC)</dt><dd>{{ p.consulta }}</dd>
+        <dt>Recorded by</dt><dd>{{ p.empleado or '—' }}</dd>
       </dl>
     </article>
     {% else %}
-    <div class="vacio">No hay pagos Bitcoin en este periodo.</div>
+    <div class="vacio">There are no Bitcoin payments in this period.</div>
     {% endfor %}
   </div>
-  <p class="nota">Los montos y el precio se guardan al registrar la venta y no se modifican. El total incluye IVA 13%.</p>
+  <p class="nota">Amounts and price are saved when the sale is recorded and are never modified. The total includes 13% VAT.</p>
 </div>
 </body>
 </html>

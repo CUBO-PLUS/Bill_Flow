@@ -1,21 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Crear cuenta{% endblock %}
+{% block title %}Create account{% endblock %}
 {% block content %}
-<h1>Crear cuenta</h1>
+<h1>Create account</h1>
 <form method="post" action="{{ url_for('register') }}">
-  <label>Usuario
+  <label>Username
     <input name="username" required>
   </label>
-  <label>Contraseña
+  <label>Password
     <input type="password" name="password" required>
   </label>
-  <label>Tipo de cuenta
+  <label>Account type
     <select name="rol">
-      <option value="asistente">Asistente de caja (registra ventas)</option>
-      {% if permitir_admin %}<option value="admin">Administrador (ve todo y avanza el DTE)</option>{% endif %}
+      <option value="asistente">Cashier assistant (records sales)</option>
+      {% if permitir_admin %}<option value="admin">Administrator (sees everything and advances the DTE)</option>{% endif %}
     </select>
   </label>
-  <button type="submit">Registrarme</button>
+  <button type="submit">Sign up</button>
 </form>
-<div class="links">¿Ya tienes cuenta? <a href="{{ url_for('login') }}">Inicia sesión</a></div>
+<div class="links">Already have an account? <a href="{{ url_for('login') }}">Log in</a></div>
 {% endblock %}
