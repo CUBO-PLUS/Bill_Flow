@@ -8,25 +8,89 @@ Uses the schema in `restaurante_db.sql` (dishes, sales, line items, document typ
 
 ## Installation (in the VS Code terminal, one line at a time)
 
-```bash
-python3 -m venv venv
-```
+En macOS y Linux la mayoría de los comandos de Git y Python son idénticos a los de Windows, pero cambian dos cosas principales:
 
-```bash
-source venv/bin/activate
-```
+Las rutas usan barras diagonales (/ en lugar de \).
 
-```bash
-pip install -r requirements.txt
-```
+La forma de activar el entorno virtual es diferente.
 
-## Running
+Aquí tienes la guía adaptada para poner en tu README.md dividida claramente por sistema operativo para que cualquier persona pueda instalar el proyecto por primera vez.
 
-```bash
+Markdown
+
+## 🚀 Guía de Instalación y Ejecución
+
+Sigue las instrucciones según el sistema operativo de tu computadora.
+
+---
+
+### 🪟 Opción A: Windows (PowerShell)
+
+Abre **PowerShell** y ejecuta un bloque a la vez:
+
+#### 1. Instalar Python y Git (omite si ya los tienes)
+```powershell
+winget install -e --id Python.Python.3.12
+winget install -e --id Git.Git
+(Si los acabas de instalar, cierra y vuelve a abrir PowerShell).
+
+2. Ir al Escritorio y clonar el repositorio
+PowerShell
+
+if (Test-Path "$HOME\OneDrive\Desktop") { cd "$HOME\OneDrive\Desktop" } elseif (Test-Path "$HOME\Desktop") { cd "$HOME\Desktop" } else { New-Item -ItemType Directory -Path "$HOME\Desktop" -Force; cd "$HOME\Desktop" }
+git clone [https://github.com/CUBO-PLUS/Bill_Flow.git](https://github.com/CUBO-PLUS/Bill_Flow.git)
+cd Bill_Flow
+3. Crear el entorno virtual
+PowerShell
+
+python -m venv venv
+4. Autorizar scripts y activar el entorno virtual
+PowerShell
+
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
+.\venv\Scripts\Activate.ps1
+(Verifica que aparezca (venv) al inicio de la línea de comandos).
+
+5. Instalar dependencias
+PowerShell
+
+pip install -r requirements.txt tzdata
+6. Iniciar la aplicación
+PowerShell
+
 python app.py
-```
+🍎 Opción B: macOS / 🐧 Linux (Terminal)
+Abre la Terminal (Cmd + Espacio y busca Terminal en Mac) y ejecuta:
 
-Open http://localhost:5000
+1. Ir al Escritorio y clonar el proyecto
+Bash
+
+cd ~/Desktop
+git clone [https://github.com/CUBO-PLUS/Bill_Flow.git](https://github.com/CUBO-PLUS/Bill_Flow.git)
+cd Bill_Flow
+2. Crear el entorno virtual
+Bash
+
+python3 -m venv venv
+3. Activar el entorno virtual
+Bash
+
+source venv/bin/activate
+(Verifica que aparezca (venv) al inicio de la terminal).
+
+4. Instalar dependencias
+Bash
+
+pip install -r requirements.txt
+5. Iniciar la aplicación
+Bash
+
+python3 app.py
+🌐 Abrir en el Navegador
+Una vez que veas el mensaje del servidor corriendo en la consola (en cualquier sistema), abre tu navegador de preferencia ingresando a:
+
+👉 http://localhost:5001
+
 
 ## Configuration
 
