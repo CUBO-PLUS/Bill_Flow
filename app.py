@@ -449,8 +449,12 @@ def bitcoin_detalle():
     ini, fin = _rango_fechas(rango)
     db = get_db()
     pagos = [dict(r) for r in db.execute(
-        "SELECT vb.*, e.nombre_usuario AS empleado FROM venta_bitcoin vb "
+        "SELECT vb.*, e.nombre_usuario AS empleado, "
+        "CASE WHEN fp.nombre = 'Bitcoin Lightning' THEN 'lightning' ELSE 'onchain' END AS red "
+        "FROM venta_bitcoin vb "
         "LEFT JOIN empleado e ON e.id = vb.empleado_id "
+        "LEFT JOIN venta v ON v.id = vb.venta_id "
+        "LEFT JOIN forma_pago fp ON fp.id = v.forma_pago_id "
         "WHERE vb.fecha_hora >= ? AND vb.fecha_hora < ? ORDER BY vb.id DESC",
         (ini.strftime("%Y-%m-%d %H:%M:%S"), fin.strftime("%Y-%m-%d %H:%M:%S")))]
 
@@ -459,6 +463,7 @@ def bitcoin_detalle():
 
     resumen = {"pagos": len(pagos), "sats": 0, "btc": Decimal("0"), "usd": Decimal("0"),
                "neto": Decimal("0"), "iva": Decimal("0"),
+               "lightning": 0, "onchain": 0,
                "sats_pagado": 0, "usd_pagado": Decimal("0"),
                "sats_pendiente": 0, "usd_pendiente": Decimal("0"),
                "estados": {"pendiente": 0, "pagada": 0, "rechazada": 0}}
@@ -470,6 +475,7 @@ def bitcoin_detalle():
         resumen["usd"] += usd
         resumen["neto"] += neto
         resumen["iva"] += iva
+        resumen[p["red"]] += 1
         resumen["estados"][p["estado"]] = resumen["estados"].get(p["estado"], 0) + 1
         if p["estado"] == "pagada":
             resumen["sats_pagado"] += sats
@@ -617,6 +623,10 @@ def nueva_venta():
         es_btc = db.execute("SELECT 1 FROM forma_pago WHERE id = ? AND codigo = '11'",
                             (pago_id,)).fetchone()
         cotizacion = None
+        # Lightning: the cashier ticked "Payment successful" -> the charge is created already paid
+        ln_pagado = bool(es_btc and request.form.get("ln_pagado")
+                         and db.execute("SELECT 1 FROM forma_pago WHERE id = ? AND nombre = 'Bitcoin Lightning'",
+                                        (pago_id,)).fetchone())
         if es_btc:
             try:  # without a valid quote the sale and the charge are NOT created
                 cotizacion = precios_btc.obtener_cotizacion()
@@ -642,9 +652,9 @@ def nueva_venta():
             msg = "Sale #%04d recorded." % cur.lastrowid
             if es_btc:
                 id_pago = bitcoin.registrar_pendiente(
-                    db, cur.lastrowid, session["user_id"], total, cotizacion)
-                msg += " Bitcoin payment PENDING, id_pago: %s (BTC/USD %s via %s)." % (
-                    id_pago, cotizacion.precio, cotizacion.fuente)
+                    db, cur.lastrowid, session["user_id"], total, cotizacion, pagado=ln_pagado)
+                msg += " Bitcoin payment %s, id_pago: %s (BTC/USD %s via %s)." % (
+                    "SUCCESSFUL" if ln_pagado else "PENDING", id_pago, cotizacion.precio, cotizacion.fuente)
             db.commit()
             if fiscales:
                 guardar_datos_fiscales(cur.lastrowid, fiscales)

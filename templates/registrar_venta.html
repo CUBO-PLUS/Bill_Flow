@@ -244,7 +244,7 @@ dialog .search:disabled { background: #e4e4e0; color: #9a9a94; cursor: not-allow
             <img src="{{ url_for('static', filename='lightning-qr.png') }}" alt="QR Bitcoin Lightning" style="width:100%;max-width:none;display:block;margin:8px auto;background:#fff">
             <small>Scan the QR code with your Lightning wallet</small>
             <label style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;font-weight:600;cursor:pointer">
-              <input type="checkbox" id="ln-pagado" style="width:18px;height:18px;cursor:pointer"> Payment successful
+              <input type="checkbox" id="ln-pagado" name="ln_pagado" value="1" style="width:18px;height:18px;cursor:pointer"> Payment successful
             </label>
           </div>
           <input type="hidden" name="items" id="items">

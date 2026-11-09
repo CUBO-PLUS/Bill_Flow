@@ -28,6 +28,10 @@
   .pendiente{background:#fef3c7;color:#92400e}
   .pagada{background:#dcfce7;color:#166534}
   .rechazada{background:#fee2e2;color:#991b1b}
+  .red{background:#fff;border:1px solid #e5e7eb}
+  .red.lightning{color:#7c3aed;border-color:#c4b5fd;background:#f5f3ff}
+  .red.onchain{color:#1d4ed8;border-color:#93c5fd;background:#eff6ff}
+  .top .tags{display:flex;flex-direction:column;align-items:flex-end;gap:.35rem}
   .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem}
   .pago{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 14px #7c3a0018;display:flex;flex-direction:column}
   .pago .top{background:linear-gradient(135deg,#f7931a,#fb923c);color:#fff;padding:.9rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem}
@@ -71,7 +75,7 @@
   <div class="kpis">
     <div class="kpi" style="--c:#f7931a"><small>Total in sats</small><b>{{ '{:,}'.format(r.sats) }}</b><span>₿ {{ '%.8f' % r.btc }} BTC</span></div>
     <div class="kpi" style="--c:#16a34a"><small>Total USD (VAT incl.)</small><b>${{ '{:,.2f}'.format(r.usd) }}</b><span>Net ${{ '{:,.2f}'.format(r.neto) }} · VAT ${{ '{:,.2f}'.format(r.iva) }}</span></div>
-    <div class="kpi" style="--c:#22c55e"><small>Collected</small><b>${{ '{:,.2f}'.format(r.usd_pagado) }}</b><span>{{ '{:,}'.format(r.sats_pagado) }} sats · {{ r.estados.pagada }} payments</span></div>
+    <div class="kpi" style="--c:#22c55e"><small>Collected</small><b>${{ '{:,.2f}'.format(r.usd_pagado) }}</b><span>{{ '{:,}'.format(r.sats_pagado) }} sats · {{ r.estados.pagada }} successful</span></div>
     <div class="kpi" style="--c:#f59e0b"><small>To collect</small><b>${{ '{:,.2f}'.format(r.usd_pendiente) }}</b><span>{{ '{:,}'.format(r.sats_pendiente) }} sats · {{ r.estados.pendiente }} pending</span></div>
   </div>
 
@@ -84,8 +88,10 @@
     </div>
     <div class="pills">
       <span class="pill pendiente">Pending: {{ r.estados.pendiente }}</span>
-      <span class="pill pagada">Paid: {{ r.estados.pagada }}</span>
+      <span class="pill pagada">Payment successful: {{ r.estados.pagada }}</span>
       <span class="pill rechazada">Rejected: {{ r.estados.rechazada }}</span>
+      <span class="pill red lightning">⚡ Lightning: {{ r.lightning }}</span>
+      <span class="pill red onchain">⛓ On-chain: {{ r.onchain }}</span>
     </div>
   </div>
 
@@ -95,7 +101,10 @@
     <article class="pago">
       <div class="top">
         <div><small>Sale #{{ '%04d' % p.venta_id }} · {{ p.fecha_hora }}</small><div class="idp">{{ p.id_pago }}</div></div>
-        <span class="pill {{ p.estado }}">{{ {'pendiente': 'PENDING', 'pagada': 'PAID', 'rechazada': 'REJECTED'}.get(p.estado, p.estado|upper) }}</span>
+        <div class="tags">
+          <span class="pill {{ p.estado }}">{{ {'pendiente': 'PENDING', 'pagada': 'PAYMENT SUCCESSFUL', 'rechazada': 'REJECTED'}.get(p.estado, p.estado|upper) }}</span>
+          <span class="pill red {{ p.red }}">{{ '⚡ LIGHTNING' if p.red == 'lightning' else '⛓ ON-CHAIN' }}</span>
+        </div>
       </div>
       <div class="hero">
         <div class="sats"><small>Sats</small><b>{{ '{:,}'.format(p.total_sats) }}</b><span>{{ '%.8f' % p.total_btc }} BTC</span></div>
@@ -109,6 +118,7 @@
         <dt>BTC/USD price</dt><dd>${{ '{:,.2f}'.format(p.precio_btc_usd) }}</dd>
         <dt>Net in BTC</dt><dd>{{ '%.8f' % p.neto_btc }}</dd>
         <dt>VAT in BTC</dt><dd>{% if p.iva_btc is not none %}{{ '%.8f' % p.iva_btc }}{% else %}—{% endif %}</dd>
+        <dt>Network</dt><dd>{{ 'Lightning Network' if p.red == 'lightning' else 'On-chain' }}</dd>
         <dt>Source</dt><dd>{{ p.fuente_precio or '—' }}</dd>
         <dt>Quoted at (UTC)</dt><dd>{{ p.consulta }}</dd>
         <dt>Recorded by</dt><dd>{{ p.empleado or '—' }}</dd>

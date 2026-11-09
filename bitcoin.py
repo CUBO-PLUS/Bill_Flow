@@ -59,20 +59,23 @@ def _guardar_cotizacion(db, tipo, venta_id, id_pago, cot):
     return cur.lastrowid
 
 
-def registrar_pendiente(db, venta_id, empleado_id, total_usd, cotizacion):
-    """Creates the pending charge with the quote ALREADY fetched (precios_btc.obtener_cotizacion).
-    Does not commit. Returns id_pago."""
+def registrar_pendiente(db, venta_id, empleado_id, total_usd, cotizacion, pagado=False):
+    """Creates the charge with the quote ALREADY fetched (precios_btc.obtener_cotizacion).
+    Pending by default; with pagado=True (Lightning "Payment successful" confirmed by the cashier)
+    it is created directly as 'pagada'. Does not commit. Returns id_pago."""
     c = pb.convertir(total_usd, cotizacion.precio)
     id_pago = "BTC-" + secrets.token_hex(4).upper()
     cot_id = _guardar_cotizacion(db, "registro", venta_id, id_pago, cotizacion)
+    if pagado:  # the price in effect at confirmation is this same one (confirmed at the register)
+        _guardar_cotizacion(db, "confirmacion", venta_id, id_pago, cotizacion)
     db.execute(
         "INSERT INTO venta_bitcoin (venta_id, fecha_hora, empleado_id, total_usd, iva_usd, "
         "neto_usd, precio_btc_usd, total_btc, total_sats, neto_btc, estado, id_pago, "
         "fuente_precio, fecha_precio, iva_btc, cotizacion_id) "
-        "VALUES (?, datetime('now','localtime'), ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?, ?, ?)",
+        "VALUES (?, datetime('now','localtime'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (venta_id, empleado_id, float(c["total_usd"]), float(c["iva_usd"]), float(c["neto_usd"]),
          float(c["precio_btc_usd"]), float(c["total_btc"]), c["total_sats"], float(c["neto_btc"]),
-         id_pago, cotizacion.fuente, cotizacion.consultado_utc, float(c["iva_btc"]), cot_id))
+         "pagada" if pagado else "pendiente", id_pago, cotizacion.fuente, cotizacion.consultado_utc, float(c["iva_btc"]), cot_id))
     db.execute("UPDATE venta SET precio_btc_usd = ? WHERE id = ?", (float(c["precio_btc_usd"]), venta_id))
     return id_pago
 
