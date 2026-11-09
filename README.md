@@ -11,6 +11,13 @@ It uses the schema in `restaurante_db.sql` (dishes, sales, sale lines, document 
 - **Advance the DTE status** (from step 1 to 5) as an administrator.
 - **View the database** from the **Data** button in the administrator panel.
 
+## Bitcoin payments
+
+- When you choose **Bitcoin**, the app queries the BTC/USD price (Coinbase, validated against Kraken) and stores an immutable copy in the `cotizacion_btc` table, with the source, the UTC time and the original response.
+- **If there is no valid price, the sale is not created.** Check your internet connection if this happens.
+- A pending payment expires after **15 minutes** (`BTC_QUOTE_TTL_MIN`).
+- Sales use the **America/El_Salvador** time zone (`BTC_LOCAL_TZ`).
+
 ## Roles
 
 - **Cashier Assistant:** records sales and only sees their own sales.
@@ -260,12 +267,7 @@ With the server running, open your browser and go to:
 
 ---
 
-## Bitcoin payments
 
-- When you choose **Bitcoin**, the app queries the BTC/USD price (Coinbase, validated against Kraken) and stores an immutable copy in the `cotizacion_btc` table, with the source, the UTC time and the original response.
-- **If there is no valid price, the sale is not created.** Check your internet connection if this happens.
-- A pending payment expires after **15 minutes** (`BTC_QUOTE_TTL_MIN`).
-- Sales use the **America/El_Salvador** time zone (`BTC_LOCAL_TZ`).
 
 ### Audit Bitcoin payments
 
