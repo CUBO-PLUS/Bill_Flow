@@ -120,4 +120,4 @@ To use the skill and open the diagram you must be **able to sign in to Lucid wit
 - When **Bitcoin** is chosen, BTC/USD is queried (Coinbase → validated Kraken) and an immutable copy is stored in `cotizacion_btc` with source, UTC time and raw response. If there is no valid price, **the sale is not created**. The fixed `BTC_USD_RATE` rate no longer exists.
 - A pending payment is considered expired after `BTC_QUOTE_TTL_MIN` minutes (15). Time zone of the sales: `BTC_LOCAL_TZ` (America/El_Salvador).
 - Claude Code skill: `.claude/skills/bitcoin-price-payment-auditor` (audit: `python3 .claude/skills/bitcoin-price-payment-auditor/scripts/audit_transactions.py`).
-- Tests: `python3 -m unittest discover -s .claude/skills/bitcoin-price-payment-auditor/tests -v`
+- Tests: `python3 -m unittest discover -s .claude/skills/bitcoin-price-payment-auditor/tests -v`.      .
