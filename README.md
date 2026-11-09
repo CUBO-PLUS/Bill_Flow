@@ -1,123 +1,375 @@
-# Demo: restaurant, sales and DTE (Flask + SQLite)
+# Bill_Flow: It is a bussiness demo where you can register a sell and get the DTE with " el sello de recepcion" from Hacienda in a second integrating Bitcoin (Flask + SQLite) 
 
-Uses the schema in `restaurante_db.sql` (dishes, sales, line items, document type, payment method, DTE status, roles and employees).
+A demo system for a restaurant that records sales (it can be implemented in any business), stores the data required for the DTE, and keeps a traceable record of Bitcoin payments.
 
-- **Sign-up**: username and password (stored in the `empleado` table). Choose the role: *Cashier Assistant* or *Administrator*.
-- **Cashier Assistant**: records sales (dish, quantity, document type, payment method) and only sees their own.
-- **Administrator**: sees employees and all sales, and advances the DTE status (step 1 to 5).
+It uses the schema in `restaurante_db.sql` (dishes, sales, sale lines, document type, payment method, DTE status, roles and employees).
 
-## Installation (in the VS Code terminal, one line at a time)
+## What you can do
 
-En macOS y Linux la mayoría de los comandos de Git y Python son idénticos a los de Windows, pero cambian dos cosas principales:
+- **Sign up** with a username and password, and choose your role.
+- **Record sales** with dish, quantity, document type and payment method (including Bitcoin).
+- **Advance the DTE status** (from step 1 to 5) as an administrator.
+- **View the database** from the **Data** button in the administrator panel.
 
-Las rutas usan barras diagonales (/ en lugar de \).
+## Roles
 
-La forma de activar el entorno virtual es diferente.
+- **Cashier Assistant:** records sales and only sees their own sales.
+- **Administrator:** sees all employees and all sales, and advances the DTE status.
 
-Aquí tienes la guía adaptada para poner en tu README.md dividida claramente por sistema operativo para que cualquier persona pueda instalar el proyecto por primera vez.
+## Business model
 
-Markdown
+Bill_Flow is not sold as a one-time license. It is offered as a service with four components:
 
-## 🚀 Guía de Instalación y Ejecución
-
-Sigue las instrucciones según el sistema operativo de tu computadora.
+- **System installation:** initial setup of the system for the business.
+- **Per-query fee:** a charge for each query the system processes.
+- **Modifications:** changes requested by the business owner, or changes required when DTE laws are reformed.
+- **3-year contract:** each client signs a three-year agreement.
 
 ---
 
-### 🪟 Opción A: Windows (PowerShell)
+## Before you start
 
-Abre **PowerShell** y ejecuta un bloque a la vez:
+You need:
 
-#### 1. Instalar Python y Git (omite si ya los tienes)
+- **Python 3.12** (or later)
+- **Git** (or download the project as a ZIP, see below)
+- **An internet connection** (to query the Bitcoin price)
+
+Open **one terminal** and follow the steps for your operating system. Run **one command at a time** and wait for it to finish before running the next.
+
+---
+
+## 🪟 Windows (PowerShell)
+
+### 1. Open PowerShell
+
+Press the **Start** key, type `PowerShell` and press **Enter**.
+
+### 2. Install Python and Git
+
+Skip this step if you already have them. Run these two commands, one at a time:
+
 ```powershell
 winget install -e --id Python.Python.3.12
+```
+
+```powershell
 winget install -e --id Git.Git
-(Si los acabas de instalar, cierra y vuelve a abrir PowerShell).
+```
 
-2. Ir al Escritorio y clonar el repositorio
-PowerShell
+When it finishes, **close PowerShell and open it again**. Then verify:
 
+```powershell
+python --version
+```
+
+```powershell
+git --version
+```
+
+### 3. Go to the Desktop and download the project
+
+```powershell
 if (Test-Path "$HOME\OneDrive\Desktop") { cd "$HOME\OneDrive\Desktop" } elseif (Test-Path "$HOME\Desktop") { cd "$HOME\Desktop" } else { New-Item -ItemType Directory -Path "$HOME\Desktop" -Force; cd "$HOME\Desktop" }
-git clone [https://github.com/CUBO-PLUS/Bill_Flow.git](https://github.com/CUBO-PLUS/Bill_Flow.git)
-cd Bill_Flow
-3. Crear el entorno virtual
-PowerShell
+```
 
+```powershell
+git clone https://github.com/CUBO-PLUS/Bill_Flow.git
+```
+
+```powershell
+cd Bill_Flow
+```
+
+> **Without Git:** open https://github.com/CUBO-PLUS/Bill_Flow, click **Code → Download ZIP**, extract the file to your Desktop, and open the `Bill_Flow` folder in PowerShell.
+
+### 4. Create the virtual environment
+
+```powershell
 python -m venv venv
-4. Autorizar scripts y activar el entorno virtual
-PowerShell
+```
 
+### 5. Allow scripts and activate the virtual environment
+
+```powershell
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
+```
+
+```powershell
 .\venv\Scripts\Activate.ps1
-(Verifica que aparezca (venv) al inicio de la línea de comandos).
+```
 
-5. Instalar dependencias
-PowerShell
+Check that **`(venv)`** appears at the start of the line.
 
+### 6. Install the dependencies
+
+```powershell
 pip install -r requirements.txt tzdata
-6. Iniciar la aplicación
-PowerShell
+```
 
+> On Windows, the `tzdata` package is needed to handle time zones.
+
+### 7. Start the application
+
+```powershell
 python app.py
-🍎 Opción B: macOS / 🐧 Linux (Terminal)
-Abre la Terminal (Cmd + Espacio y busca Terminal en Mac) y ejecuta:
+```
 
-1. Ir al Escritorio y clonar el proyecto
-Bash
+When you see that the server is running, continue with **Open the application**.
 
+---
+
+## 🍎 macOS (Terminal)
+
+### 1. Open Terminal
+
+Press **Cmd + Space**, type `Terminal` and press **Enter**.
+
+### 2. Check Python and Git
+
+Run:
+
+```bash
+python3 --version
+```
+
+If you do not see version 3.12 or later, install Python from https://www.python.org/downloads/ (or with Homebrew: `brew install python@3.12`).
+
+```bash
+git --version
+```
+
+If Git is not installed, macOS will offer to install the **Command Line Tools**. Accept and wait for it to finish.
+
+### 3. Go to the Desktop and download the project
+
+```bash
 cd ~/Desktop
-git clone [https://github.com/CUBO-PLUS/Bill_Flow.git](https://github.com/CUBO-PLUS/Bill_Flow.git)
+```
+
+```bash
+git clone https://github.com/CUBO-PLUS/Bill_Flow.git
+```
+
+```bash
 cd Bill_Flow
-2. Crear el entorno virtual
-Bash
+```
 
+> **Without Git:** open https://github.com/CUBO-PLUS/Bill_Flow, click **Code → Download ZIP**, extract the file to your Desktop, and go into the folder with `cd ~/Desktop/Bill_Flow`.
+
+### 4. Create the virtual environment
+
+```bash
 python3 -m venv venv
-3. Activar el entorno virtual
-Bash
+```
 
+### 5. Activate the virtual environment
+
+```bash
 source venv/bin/activate
-(Verifica que aparezca (venv) al inicio de la terminal).
+```
 
-4. Instalar dependencias
-Bash
+Check that **`(venv)`** appears at the start of the line.
 
+### 6. Install the dependencies
+
+```bash
 pip install -r requirements.txt
-5. Iniciar la aplicación
-Bash
+```
 
+### 7. Start the application
+
+```bash
 python3 app.py
-🌐 Abrir en el Navegador
-Una vez que veas el mensaje del servidor corriendo en la consola (en cualquier sistema), abre tu navegador de preferencia ingresando a:
+```
 
-👉 http://localhost:5001
+When you see that the server is running, continue with **Open the application**.
 
+---
+
+## 🐧 Linux (Ubuntu / Debian)
+
+### 1. Open Terminal and install Python and Git
+
+Skip this step if you already have them.
+
+```bash
+sudo apt update
+```
+
+```bash
+sudo apt install -y python3 python3-venv git
+```
+
+### 2. Download the project
+
+```bash
+cd ~/Desktop
+```
+
+```bash
+git clone https://github.com/CUBO-PLUS/Bill_Flow.git
+```
+
+```bash
+cd Bill_Flow
+```
+
+> If you do not have a `Desktop` folder, use `cd ~` instead of `cd ~/Desktop`.
+
+### 3. Create and activate the virtual environment
+
+```bash
+python3 -m venv venv
+```
+
+```bash
+source venv/bin/activate
+```
+
+Check that **`(venv)`** appears at the start of the line.
+
+### 4. Install the dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 5. Start the application
+
+```bash
+python3 app.py
+```
+
+---
+
+## 🌐 Open the application
+
+With the server running, open your browser and go to:
+
+👉 **http://localhost:5001**
+
+---
+
+## First use (demo)
+
+1. **Sign up:** choose a username, a password and your role.
+2. **If you are a cashier:** record a sale by choosing a dish, quantity, document type and payment method. You will only see your own sales.
+3. **If you are an administrator:** you will see all employees and all sales. From here you advance the DTE status (step 1 to 5).
+4. **Data button (green, top right):** opens `/data`, showing the real schema of `restaurante.db`: tables, primary keys (PK), foreign keys (FK), row counts and latest rows. It refreshes automatically when users or sales are added.
+
+---
+
+## Bitcoin payments
+
+- When you choose **Bitcoin**, the app queries the BTC/USD price (Coinbase, validated against Kraken) and stores an immutable copy in the `cotizacion_btc` table, with the source, the UTC time and the original response.
+- **If there is no valid price, the sale is not created.** Check your internet connection if this happens.
+- A pending payment expires after **15 minutes** (`BTC_QUOTE_TTL_MIN`).
+- Sales use the **America/El_Salvador** time zone (`BTC_LOCAL_TZ`).
+
+### Audit Bitcoin payments
+
+With the virtual environment activated, run:
+
+```bash
+python3 .claude/skills/bitcoin-price-payment-auditor/scripts/audit_transactions.py
+```
+
+On Windows, use `python` instead of `python3`.
+
+---
 
 ## Configuration
 
 In `app.py`:
 
-- `PERMITIR_REGISTRO_ADMIN = True` lets users pick "Administrator" at sign-up (for the demo).
-- Set it to `False` if you want sign-up to only create Cashier Assistants.
+- `PERMITIR_REGISTRO_ADMIN = True` lets users choose **Administrator** when signing up (for the demo).
+- Set it to `False` if you want sign-up to create only Cashier Assistants.
 
-Data is stored in `restaurante.db` (SQLite), which is created automatically from `restaurante_db.sql` the first time. To reset the demo, delete that file.
+Data is stored in `restaurante.db` (SQLite). That database is created automatically from `restaurante_db.sql` the first time you run the app.
 
-## Security note
+### Reset the demo (delete all data)
 
-Passwords are stored as hashes (scrypt with salt), not as plain text. This demo has no HTTPS or CSRF protection, so do not expose it to the internet as-is.
+1. Stop the server with **Ctrl + C**.
+2. Delete the `restaurante.db` file:
+   - Windows: `del restaurante.db`
+   - macOS / Linux: `rm restaurante.db`
+3. Start again with `python app.py` (Windows) or `python3 app.py` (macOS / Linux).
 
-## Data (database diagram)
+---
 
-- The **Administrator** dashboard has a green **Data** button (top right). It opens `/data`: the real schema of `restaurante.db` (tables, primary keys PK, foreign keys FK, row counts and latest rows). It refreshes by itself when users or sales are added.
+## Database diagram (Lucid)
+
 - `python esquema.py` prints the schema as JSON (`lucid_create_erd` format).
-- Project skill: `.claude/skills/actualizar-lucid-erd` → with Claude Code and the Lucid MCP it redraws the ERD in Lucid and saves the link in `lucid_erd.json` (the Data button shows it).
+- Project skill: `.claude/skills/actualizar-lucid-erd`. With Claude Code and the Lucid connector, it redraws the ERD in Lucid and saves the link in `lucid_erd.json` (the **Data** button shows it).
 
-### Lucid requirement
+**Requirement:** to use the skill you need a Lucid account (lucid.app) with your email, and the **Lucid** connector authorized in Claude (claude.ai → Connectors). Without these, the diagram cannot be created or updated.
 
-To use the skill and open the diagram you must be **able to sign in to Lucid with your email** (a lucid.app account) and have the **Lucid** connector authorized in Claude (claude.ai → Connectors). Without that account/authorization the skill cannot create or update the diagram.
+---
 
-## Bitcoin payments (traceability)
+## Tests
 
-- When **Bitcoin** is chosen, BTC/USD is queried (Coinbase → validated Kraken) and an immutable copy is stored in `cotizacion_btc` with source, UTC time and raw response. If there is no valid price, **the sale is not created**. The fixed `BTC_USD_RATE` rate no longer exists.
-- A pending payment is considered expired after `BTC_QUOTE_TTL_MIN` minutes (15). Time zone of the sales: `BTC_LOCAL_TZ` (America/El_Salvador).
-- Claude Code skill: `.claude/skills/bitcoin-price-payment-auditor` (audit: `python3 .claude/skills/bitcoin-price-payment-auditor/scripts/audit_transactions.py`).
-- Tests: `python3 -m unittest discover -s .claude/skills/bitcoin-price-payment-auditor/tests -v`.      .
+With the virtual environment activated:
+
+```bash
+python3 -m unittest discover -s .claude/skills/bitcoin-price-payment-auditor/tests -v
+```
+
+On Windows, use `python` instead of `python3`.
+
+---
+
+## Stop and exit
+
+- To stop the server: **Ctrl + C** in the terminal.
+- To leave the virtual environment: `deactivate`.
+
+### Coming back another day
+
+**Windows (PowerShell):**
+
+```powershell
+cd "$HOME\Desktop\Bill_Flow"
+```
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+```powershell
+python app.py
+```
+
+**macOS / Linux:**
+
+```bash
+cd ~/Desktop/Bill_Flow
+```
+
+```bash
+source venv/bin/activate
+```
+
+```bash
+python3 app.py
+```
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| Windows: `python` is not recognized | Close and reopen PowerShell. If it still fails, reinstall Python and check **Add python.exe to PATH**. |
+| Windows: "running scripts is disabled" | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force` first, then activate the environment. |
+| macOS: `command not found: python3` | Install Python from python.org and reopen Terminal. |
+| `(venv)` does not appear | Run the activation command for your system again. |
+| `requirements.txt` not found | Make sure you are inside the `Bill_Flow` folder (use `dir` on Windows or `ls` on macOS / Linux). |
+| Port 5001 is already in use | Stop the other running instance of the app with Ctrl + C, or close the program using that port. |
+| The Bitcoin sale is not created | Check your internet connection. Without a valid price from Coinbase or Kraken, the sale is not recorded. |
+
+---
+
+## Security
+
+Passwords are stored as hashes (scrypt with salt), not as plain text. This demo **has no HTTPS or CSRF protection**, so do not expose it to the internet as it is.
